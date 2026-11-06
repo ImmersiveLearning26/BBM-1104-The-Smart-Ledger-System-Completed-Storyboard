@@ -1,0 +1,22 @@
+# Verification
+The academic calculation checks and browser paths below were exercised against the included implementation with fictional data.
+
+| Check | Expected and observed behaviour |
+|---|---|
+| Open and identify | Local index opens. Splash advances to a product cover, then Start opens name entry; a name reaches the timed intro and title. Skip opens the same title card. |
+| Audit and mapping | Incomplete inspection keeps the action locked. A wrong first audit action can be retried. Incomplete account pairs do not score. A reversed pair receives feedback. Six correct mappings unlock June. |
+| Balance extraction | A wrong-side selection can be retried. Reload after placement retains the accepted side. All eleven accounts yield 465,900 debit and 480,000 credit; 14,100 debit-short is accepted. |
+| Evidence and correction | All three records can be inspected. Wrong diagnosis can be retried. E1 first gives Credit 900; E2 first gives Debit 15,000. A rejected correction is preview-only. Both orders end at nil and 465,000 per side. |
+| Test and regression | Missing prediction and insufficient category coverage block progression. A wrong prediction stays in the log. T10 shows Balanced alongside Entry mismatch. A wrong repair can be retried. Repairing F1 and F3 alone leaves the T9 failure in the ten-case report. Returning to T9, repairing F2 and running again produces ten passes. |
+| Handover and debrief | The overclaim prompts a retry. Three written responses are required. A sample rationale earns three indicative marks. One human override changes RS and the weighted grade. |
+| Persistence and export | Optional reflection and completion survive reload. Export includes the reviewed mark and full report. A second import of the same completed attempt keeps the cohort count at one. Cancelling a restart retains the run; confirming starts a clean identity screen. |
+| Presentation | 27 separate, labelled references, using a synthetic learner. Desktop Chromium at 1440 × 900; identity and audit checked for page overflow at 390 × 844. No uncaught browser exceptions in the exercised route. |
+
+## Repeat
+Run `node verification/accounting.cjs` from the extracted folder (Node 18+). In the same Playwright setup as browser.cjs, `node verification/recap.cjs` checks the debrief recap (playback, crossfade, reduced motion, blocked media, 390px, splash logo) and `node verification/audio.cjs` checks voices and shop sound (playback, pause, cue timing, briefings, toggles, blocked audio). It checks totals, both correction orders, seeded faults, scoring endpoints and the 81.5 worked example. To repeat the entire browser exercise with a local QA installation of Playwright and Chromium, make the playwright package resolvable to Node, run `npx playwright install chromium`, then `node verification/browser.cjs`. It launches the local index, drives the normal UI and writes a fresh set of references and a fictional export to an OS temporary directory.
+
+## Release checks
+Have the accounting SME approve the stated first-attempt denominators and review sample free-text judgements. Verify approved opener footage, voice performances and final captions once supplied. Perform target-device keyboard, screen reader and touch testing, especially the long tables and modal focus. Verify Safari and Firefox, simultaneous sessions and authenticated remote reporting if commissioned. The delivered learner store supports one active local run per browser origin; use one learner tab per attempt.
+
+## Motion-cover release checks
+The normal-motion player advanced and accepted Pause and Play. With reduced motion enabled, the cover started on the poster with time zero. With both video requests blocked, the main Start button still opened name entry. The CTA was visible at 1366 × 768 and 390 × 844. The audit inspector fit both viewport widths, and Escape dismissed the rule-sheet dialog. Repeat with `node verification/cover.cjs` in the same Playwright environment as the main browser test. Media fallback, progressive reveal and animation can be retested independently of scoring.
