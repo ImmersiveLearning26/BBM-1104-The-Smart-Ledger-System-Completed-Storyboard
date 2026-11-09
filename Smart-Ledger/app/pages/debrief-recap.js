@@ -25,12 +25,13 @@ function mountRecap(){
  video.addEventListener('error',unavailable);video.querySelector('source').addEventListener('error',unavailable);
  root.querySelectorAll('.recapSlide img').forEach(img=>img.addEventListener('error',()=>{const f=img.closest('figure');f.classList.add('missing');f.setAttribute('role','img');f.setAttribute('aria-label',img.alt)}));
  if(!reducedMotion())video.play().catch(sync);else video.pause();
- sync();
+ sync();startMusic();recapVoice(ui.recap||0);
 }
 function showRecap(i){
  ui.recap=i;
  root.querySelectorAll('.recapSlide').forEach((el,j)=>el.classList.toggle('on',j===i));
  byId('recapTitle'+i)?.focus({preventScroll:true});
+ recapVoice(i);
 }
 function toggleRecap(){
  const video=byId('recapVideo'),control=root.querySelector('.recapControl');if(!video)return;

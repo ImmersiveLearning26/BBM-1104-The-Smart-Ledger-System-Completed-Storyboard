@@ -1,6 +1,6 @@
 # Debrief recap media
 
-The debrief opens with a two-slide visual recap (Debrief · 1 of 2 → Next → Debrief · 2 of 2 → View my results) over a silent store loop. The recap code is in `app/pages/debrief-recap.js`. Its styles are the `.recap*` rules at the end of `app/style.css`. All headings, explanations, figures and the fact chips are live HTML. The figures come from the learner's saved record (`cash(14100)`, `suspense(s)`, `s.report`, `s.repairs`).
+The debrief opens with a two-slide visual recap (Debrief · 1 of 2 → Next → Debrief · 2 of 2 → View my results) over a silent store loop. The recap code is in `app/pages/debrief-recap.js`. Its styles are the `.recap*` rules at the end of `app/style.css`. All headings, explanations, figures and the fact chips are live HTML. Each slide is narrated (`voice/recap-0.mp3`, `recap-1.mp3`, not yet recorded; see Audio.md), and a music bed plays under the recap once `audio/music/debrief-bed.mp3` exists. The figures come from the learner's saved record (`cash(14100)`, `suspense(s)`, `s.report`, `s.repairs`).
 
 ## Asset slots
 Replace a file in place, keeping its name, and no code change is needed. Paths are relative to `app/`.

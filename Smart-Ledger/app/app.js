@@ -8,8 +8,15 @@ const introPages=['splash','cover','identity','intro','title'];
 const byId=id=>document.getElementById(id);
 const activeSection=()=>sections.findIndex(v=>v[1].includes(s.page));
 const supportedSpeech=()=>typeof speechSynthesis!=='undefined'&&typeof SpeechSynthesisUtterance!=='undefined';
+// Feedback and hints: recorded segments when every part of the line is recorded, otherwise the device voice.
 function say(line){
- if(!s.media.voice||!supportedSpeech())return;
+ const keys=segmentLine(line);if(!keys)console.debug('[unvoiced]',line);
+ if(!s.media.voice)return;
+ const clips=recordedOn()&&keys&&keys.map(k=>feedbackClips[k]);
+ if(clips&&clips.length&&clips.every(Boolean))playVoice(clips,line);else deviceSay(line);
+}
+function deviceSay(line){
+ if(!line||!s.media.voice||!supportedSpeech())return;
  stopVoice();speechSynthesis.cancel();
  const voice=new SpeechSynthesisUtterance(line);voice.lang='en-KE';
  const match=speechSynthesis.getVoices().find(v=>v.lang.toLowerCase()==='en-ke');
@@ -45,7 +52,7 @@ function scheduleCue(){
  const delay=cueRemaining??cueHold(ui.cue,[14500,12000,15500,15000,5000][ui.cue]);cueRemaining=null;cueDeadline=Date.now()+delay;
  timer=setTimeout(()=>{if(ui.cue===4){go('title');return}ui.cue++;render();introVoice(ui.cue);introSounds(ui.cue);scheduleCue()},delay);
 }
-function settingsText(){return '<label class="toggle"><input type="checkbox" id="captions" '+(s.media.captions?'checked':'')+'>Show subtitles</label><label class="toggle"><input type="checkbox" id="recorded" '+(recordedOn()?'checked':'')+'>Play recorded voices for Grace and the narrator</label><label class="toggle"><input type="checkbox" id="ambience" '+(soundsOn()?'checked':'')+'>Play shop sounds in the opening</label><label class="toggle"><input type="checkbox" id="voice" '+(s.media.voice?'checked':'')+(supportedSpeech()?'':' disabled')+'>Read feedback aloud with this device</label><p>Written prompts are available throughout the simulation.</p>'+(s.page==='intro'?details('Read introduction',intro.map(([speaker,line])=>'<p><b>'+speaker+'</b> · '+line+'</p>').join('')):'')}
+function settingsText(){return '<label class="toggle"><input type="checkbox" id="captions" '+(s.media.captions?'checked':'')+'>Show subtitles</label><label class="toggle"><input type="checkbox" id="recorded" '+(recordedOn()?'checked':'')+'>Play recorded voices for Grace and the narrator</label><label class="toggle"><input type="checkbox" id="ambience" '+(soundsOn()?'checked':'')+'>Play sounds: shop ambience, answer cues and music</label><label class="toggle"><input type="checkbox" id="voice" '+(s.media.voice?'checked':'')+(supportedSpeech()?'':' disabled')+'>Read feedback and hints aloud</label><p>Written prompts are available throughout the simulation.</p>'+(s.page==='intro'?details('Read introduction',intro.map(([speaker,line])=>'<p><b>'+speaker+'</b> · '+line+'</p>').join('')):'')}
 function startBranch(){s.started=s.started||new Date().toISOString();go('audit')}
 function required(message){msg(message)}
 function keepFocusMessage(line){const node=byId('status');if(node){node.textContent=line;node.focus()}say(line)}

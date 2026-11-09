@@ -19,3 +19,18 @@ Use the local Afacad/Manrope files, the 196px desktop rail, white workspace, fog
 
 ## Definition of done
 Run the included accounting checks and browser walkthrough; also test a blocked or unsupported video, reduced motion, 390px mobile and laptop width. Reopen an in-progress attempt, exercise a wrong choice and retry, export a reviewed final result, then verify that the same completed attempt imported twice counts once. A live LMS or authenticated backend is a separate integration. Deliver local assets with relative paths and retain the source storyboard and notices.
+
+## Added after the original kit
+- **Opening:** the MIVA Open University logo (app/assets/brand/) on the splash.
+- **Debrief recap:** two full-screen slides over a seamless Kling 4.0 store loop, before the detailed debrief (app/pages/debrief-recap.js, production/Debrief-media.md).
+- **Voices and sound** (app/audio.js, production/Audio.md):
+  - Grace and the narrator are recorded for the intro, the scene briefings and the closing line.
+  - Feedback and hints are split into scripted segments and play recordings where they exist, otherwise the device voice.
+  - The opening has shop ambience and effects; graded answers play soft confirm and correction cues; the recap has a music slot.
+- **Generated files:** after changing curriculum text or feedback wording, run `node production/build-voice-lines.cjs`. After changing any file under app/, run `node handoff/build-replication-code.cjs`. browser.cjs fails if a feedback line is missing from the voice script.
+
+### Still open
+- The two recap pictures in app/assets/debrief/ are temporary crops. The prompts are in production/Debrief-media.md.
+- 80 scripted lines are not recorded yet (`"recorded": false` in production/voice-lines.json). The steps are in production/Audio.md.
+- The recap music bed (app/assets/audio/music/debrief-bed.mp3) is an empty slot. The prompt is in production/Audio.md.
+- Have a Kenyan-English speaker approve both voices.

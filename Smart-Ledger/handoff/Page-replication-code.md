@@ -19,6 +19,9 @@ These are the executable renderers and handlers from this build. The source path
 | Handover to Grace | [pages/handover.js](../app/pages/handover.js) | [P16a-handover-choice](../design/screens/P16a-handover-choice.png) · [P16-handover](../design/screens/P16-handover.png) |
 | Debrief and reflection | [pages/debrief.js](../app/pages/debrief.js) | [P17-debrief](../design/screens/P17-debrief.png) |
 | Completion, export and review | [pages/complete.js](../app/pages/complete.js) | [P18-completion](../design/screens/P18-completion.png) |
+| Debrief recap | [pages/debrief-recap.js](../app/pages/debrief-recap.js) | [P16b-recap-trace](../design/screens/P16b-recap-trace.png) · [P16c-recap-test](../design/screens/P16c-recap-test.png) |
+| Voices, feedback audio and sound | [audio.js](../app/audio.js) | — |
+| Audio manifest | [audio-manifest.js](../app/audio-manifest.js) | — |
 | Routing, actions, persistence and review modal | [app.js](../app/app.js) | [D03-rubric-review](../design/screens/D03-rubric-review.png) |
 | Facilitator import entry point | [facilitator.html](../app/facilitator.html) | [F01-cohort](../design/screens/F01-cohort.png) |
 | Facilitator report calculation | [cohort.js](../app/cohort.js) | [F01-cohort](../design/screens/F01-cohort.png) |
@@ -29,7 +32,7 @@ app/content.js supplies immutable curriculum data. app/engine.js calculates ledg
 ## Opening, identity, briefing and role confirmation
 **Source**: `app/pages/opening.js`  
 **Actions**: advanceSplash, submit identity, pause, skip, start
-Emit the shell, collect a name, play the five caption cues and enter audit. Cue and pause timing are in app.js.
+Emit the shell with the MIVA Open University logo, collect a name, play the five caption cues with their recorded lines and shop sound, and enter audit. Cue, pause and audio timing are in app.js and audio.js.
 
 ```javascript
 function hero(){
@@ -285,7 +288,7 @@ function handover(){
 ## Debrief and reflection
 **Source**: `app/pages/debrief.js`  
 **Actions**: open details, edit lesson/note, finish
-Calculate the weighted score from committed evidence. Expand personal feedback and reflect; reflection has zero score weight.
+Calculate the weighted score from committed evidence. Opens after the two-slide recap (pages/debrief-recap.js). Expand personal feedback and reflect; reflection has zero score weight.
 
 ```javascript
 function logTable(tasks){
@@ -316,15 +319,145 @@ function finishPage(){
 }
 ```
 
+## Debrief recap
+**Source**: `app/pages/debrief-recap.js`  
+**Actions**: recapNext, recapBack, recapDone, toggleRecap
+Two full-screen slides over the store loop before the detailed debrief. Headings, explanations and figures are live HTML; each slide is narrated when recorded. Media never gates the flow. See production/Debrief-media.md.
+
+```javascript
+// Two-slide visual recap shown once, before the detailed debrief.
+// Headings, explanations and figures are live HTML; the pictures and the store loop are replaceable files:
+//   assets/debrief/trace-difference.webp, assets/debrief/test-system.webp,
+//   assets/video/zuri-store-loop.mp4, assets/video/zuri-store-poster.webp
+// Continue never waits for media: a missing image leaves a tinted frame, a failed video leaves the poster.
+const recapSlides=[
+ {img:'assets/debrief/trace-difference.webp',alt:'Supplier invoices and the sales notebook on the Zuri Home Supplies counter.',title:'Trace the difference',
+  text:()=>'You compared the ledger with its source records and corrected the errors behind the <strong>'+cash(14100)+'</strong> difference.',
+  facts:()=>['Difference · '+cash(14100)+' debit short','Suspense · '+balance(suspense(s))]},
+ {img:'assets/debrief/test-system.webp',alt:'Grace Achieng reviewing the ledger on a laptop at her shop counter.',title:'Test beyond the totals',
+  text:()=>'Equal debit and credit totals can still hide a wrong-account posting. Your tests checked both the amounts and the accounts.',
+  facts:()=>[(s.report||[]).filter(a=>a.pass).length+' of 10 cases pass','Routines repaired · '+s.repairs.length+' of 3']}
+];
+const reducedMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+function recapPage(){
+ const at=ui.recap||0;
+ const slides=recapSlides.map((r,i)=>'<section class="recapSlide'+(i===at?' on':'')+'" id="recap'+i+'" aria-labelledby="recapTitle'+i+'"><figure><img src="'+r.img+'" alt="'+escapeHTML(r.alt)+'" width="1200" height="800" decoding="async"></figure><div class="recapText"><p class="over">Debrief · '+(i+1)+' of '+recapSlides.length+'</p><h1 id="recapTitle'+i+'" tabindex="-1">'+r.title+'</h1><p>'+r.text()+'</p><ul class="recapFacts">'+r.facts().map(f=>'<li>'+escapeHTML(f)+'</li>').join('')+'</ul><div class="tools">'+(i===0?button('recapNext','Next →'):choice('recapBack','← Back')+button('recapDone','View my results →'))+'</div></div></section>').join('');
+ return '<main class="recap"><video id="recapVideo" class="recapBg" muted loop playsinline '+(reducedMotion()?'':'autoplay ')+'preload="metadata" poster="assets/video/zuri-store-poster.webp" aria-hidden="true"><source src="assets/video/zuri-store-loop.mp4" type="video/mp4"></video><div class="recapShade" aria-hidden="true"></div><div class="heroTop"><span>BBM 1104 &nbsp; / &nbsp; PRINCIPLES OF ACCOUNTING</span><button type="button" class="recapControl" data-do="toggleRecap">Play background</button></div><div class="recapStage">'+slides+'</div></main>';
+}
+function mountRecap(){
+ const video=byId('recapVideo'),control=root.querySelector('.recapControl');
+ const sync=()=>control.textContent=video.paused?'Play background':'Pause background';
+ const unavailable=()=>{control.hidden=true};
+ video.addEventListener('play',sync);video.addEventListener('pause',sync);
+ video.addEventListener('error',unavailable);video.querySelector('source').addEventListener('error',unavailable);
+ root.querySelectorAll('.recapSlide img').forEach(img=>img.addEventListener('error',()=>{const f=img.closest('figure');f.classList.add('missing');f.setAttribute('role','img');f.setAttribute('aria-label',img.alt)}));
+ if(!reducedMotion())video.play().catch(sync);else video.pause();
+ sync();startMusic();recapVoice(ui.recap||0);
+}
+function showRecap(i){
+ ui.recap=i;
+ root.querySelectorAll('.recapSlide').forEach((el,j)=>el.classList.toggle('on',j===i));
+ byId('recapTitle'+i)?.focus({preventScroll:true});
+ recapVoice(i);
+}
+function toggleRecap(){
+ const video=byId('recapVideo'),control=root.querySelector('.recapControl');if(!video)return;
+ const label=()=>control.textContent=video.paused?'Play background':'Pause background';
+ if(video.paused){control.textContent='Pause background';video.play().catch(label)}else{video.pause();label()}
+}
+```
+
+## Voices, feedback audio and sound
+**Source**: `app/audio.js`  
+**Actions**: introVoice, briefVoice, recapVoice, closingVoice, say (feedback), answer cues
+Plays recorded lines with caption and device-voice fallback, splits feedback into recorded segments, and adds shop ambience, opening effects, answer cues and the recap music bed. See production/Audio.md.
+
+```javascript
+// Recorded voices and shop sound. Nothing in the simulation waits on audio:
+// captions and timed cues run on their own, and a clip that cannot load or play
+// falls back to the device voice (when that setting is on) or to silence.
+const voiceEl=new Audio(),ambienceEl=new Audio(),musicEl=new Audio();
+voiceEl.preload='auto';ambienceEl.loop=true;ambienceEl.preload='none';musicEl.loop=true;musicEl.preload='none';
+let voiceToken=0,voiceFallback='',sfxTimers=[],fadeTimer;
+const recordedOn=()=>s.media.recorded!==false;
+const soundsOn=()=>s.media.ambience!==false;
+
+function stopVoice(){voiceToken++;voiceEl.onended=voiceEl.onerror=null;voiceEl.pause()}
+// Play clips in order. fallback is the same words for the device voice.
+function playVoice(clips,fallback){
+ stopVoice();if(supportedSpeech())speechSynthesis.cancel();
+ clips=(clips||[]).filter(Boolean);voiceFallback=fallback||'';
+ if(!recordedOn()||!clips.length){deviceSay(fallback);return}
+ const token=voiceToken;let i=0;
+ const fail=()=>{if(token!==voiceToken)return;voiceToken++;deviceSay(voiceFallback)};
+ const next=()=>{if(token!==voiceToken||i>=clips.length)return;voiceEl.src=clips[i++].src;voiceEl.play().catch(fail)};
+ voiceEl.onended=next;voiceEl.onerror=fail;next();
+}
+function pauseVoice(){voiceEl.pause()}
+function resumeVoice(){if(recordedOn()&&voiceEl.onended&&voiceEl.src&&!voiceEl.ended&&voiceEl.currentTime>0)voiceEl.play().catch(()=>{})}
+const introVoice=i=>playVoice([voiceClips.intro[i]],intro[i][1]);
+const briefVoice=i=>playVoice(voiceClips.brief[i],briefings[i].join(' '));
+const closingVoice=()=>playVoice([voiceClips.closing],'Thank you for staying with the numbers until they made sense.');
+// Recorded intro lines may set a longer hold than the default cue timing.
+const cueHold=(i,base)=>Math.max(base,recordedOn()&&voiceClips.intro[i]?.dur?voiceClips.intro[i].dur*1000+900:0);
+const recapVoice=i=>{const r=recapSlides[i];if(recordedOn())playVoice([voiceClips.recap[i]],r.title+'. '+r.text().replace(/<[^>]+>/g,''))};
+// Split a feedback message into recorded segments, longest match first. null = some part has no script line.
+const feedbackKeys=Object.keys(feedbackClips).sort((a,b)=>b.length-a.length);
+function segmentLine(line){const keys=[];let rest=String(line||'').trim();while(rest){const k=feedbackKeys.find(k=>rest.startsWith(k));if(!k)return null;keys.push(k);rest=rest.slice(k.length).trim()}return keys}
+
+function sfx(name,delay=0,volume=.6){
+ if(!soundsOn()||!soundClips[name])return;
+ if(!delay){const a=new Audio(soundClips[name]);a.volume=volume;a.play().catch(()=>{});return}
+ sfxTimers.push(setTimeout(()=>{const a=new Audio(soundClips[name]);a.volume=volume;a.play().catch(()=>{})},delay));
+}
+function startAmbience(){
+ if(!soundsOn()||!soundClips.ambience)return;
+ if(!ambienceEl.src)ambienceEl.src=soundClips.ambience;
+ clearInterval(fadeTimer);ambienceEl.volume=0;ambienceEl.play().then(()=>{
+  fadeTimer=setInterval(()=>{ambienceEl.volume=Math.min(.35,ambienceEl.volume+.035);if(ambienceEl.volume>=.35)clearInterval(fadeTimer)},120);
+ }).catch(()=>{});
+}
+function pauseAmbience(){clearInterval(fadeTimer);ambienceEl.pause()}
+function resumeAmbience(){if(!soundsOn()||!['intro','title'].includes(s.page))return;if(!ambienceEl.src)startAmbience();else ambienceEl.play().catch(()=>{})}
+function stopShopSound(){sfxTimers.forEach(clearTimeout);sfxTimers=[];pauseAmbience();musicEl.pause()}
+// Music bed under the debrief recap (slot: assets/audio/music/debrief-bed.mp3).
+function startMusic(){if(!soundsOn()||!soundClips.music)return;if(!musicEl.src)musicEl.src=soundClips.music;musicEl.volume=.18;musicEl.play().catch(()=>{})}
+// Soft confirm/correction cue on every graded answer.
+const gradedTasks=['audit','map','column','difference','type','post','predict','repair','regression','summary'];
+onRecord=(task,ok)=>{if(gradedTasks.includes(task))sfx(ok?'confirm':'correction',0,.35)};
+// Opening beats from production/Media.md: door chime, till, phone.
+function introSounds(i){if(i===0){startAmbience();sfx('chime',250)}if(i===1)sfx('till',200,.5);if(i===2)sfx('phone',600,.55)}
+```
+
+## Audio manifest
+**Source**: `app/audio-manifest.js`  
+**Actions**: none (data)
+Generated by production/build-voice-lines.cjs from production/voice-lines.json. A null entry means that line is not recorded yet.
+
+```javascript
+// Generated by production/build-voice-lines.cjs. Do not edit by hand.
+// Recorded voices (Eleven v4 via Higgsfield). Grace: custom voice 'Joy'. Narrator: custom voice 'Dr. Omondi (Lecturer)'.
+// null = not recorded yet; that line falls back to the device voice (when enabled) or silence.
+const voiceClips={
+ intro:[{"src":"assets/audio/voice/intro-0.mp3","dur":11.57},{"src":"assets/audio/voice/intro-1.mp3","dur":8.23},{"src":"assets/audio/voice/intro-2.mp3","dur":11.49},{"src":"assets/audio/voice/intro-3.mp3","dur":12.38},{"src":"assets/audio/voice/intro-4.mp3","dur":2.22}],
+ brief:[[{"src":"assets/audio/voice/brief-0-grace.mp3","dur":6.06},{"src":"assets/audio/voice/brief-0-narrator.mp3","dur":8.39}],[{"src":"assets/audio/voice/brief-1-grace.mp3","dur":7.5},{"src":"assets/audio/voice/brief-1-narrator.mp3","dur":10.71}],[{"src":"assets/audio/voice/brief-2-grace.mp3","dur":5.75},{"src":"assets/audio/voice/brief-2-narrator.mp3","dur":16.07}],[{"src":"assets/audio/voice/brief-3-grace.mp3","dur":5.36},{"src":"assets/audio/voice/brief-3-narrator.mp3","dur":6.14}]],
+ closing:{"src":"assets/audio/voice/closing-grace.mp3","dur":3.27},
+ recap:[null,null]
+};
+// Feedback and hint segments: text -> clip (null until recorded).
+const feedbackClips={"Three draft postings differ from the rules.":null,"Changing headings or hiding accounts leaves the original postings unchecked. Try again.":null,"Choose both accounts before saving.":null,"Saved.":null,"Hint:":null,"Cash comes into the shop. The owner’s capital increases.":null,"Cash and sales income both increase.":null,"Inventory rises and the shop owes its supplier.":null,"Rent expense increases. The bank balance falls.":null,"Bank increases. The amount owed by the customer falls.":null,"Drawings increase. The shop has less cash.":null,"Sides swapped. Check which balance increases and which falls.":null,"Owner withdrawals are drawings. A personal withdrawal is separate from a business expense.":null,"Check the debit account (asset).":null,"Check the debit account (expense).":null,"Check the debit account (drawings).":null,"Check the credit account (capital).":null,"Check the credit account (income).":null,"Check the credit account (liability).":null,"Check the credit account (asset).":null,"Cash placed in Debit.":null,"Check the normal balance for Cash (asset).":null,"Bank placed in Debit.":null,"Check the normal balance for Bank (asset).":null,"Inventory placed in Debit.":null,"Check the normal balance for Inventory (asset).":null,"Equipment placed in Debit.":null,"Check the normal balance for Equipment (asset).":null,"Trade Receivables placed in Debit.":null,"Check the normal balance for Trade Receivables (asset).":null,"Trade Payables placed in Credit.":null,"Check the normal balance for Trade Payables (liability).":null,"Capital placed in Credit.":null,"Check the normal balance for Capital (capital).":null,"Drawings placed in Debit.":null,"Check the normal balance for Drawings (drawings).":null,"Sales placed in Credit.":null,"Check the normal balance for Sales (income).":null,"Rent Expense placed in Debit.":null,"Check the normal balance for Rent Expense (expense).":null,"Delivery Expense placed in Debit.":null,"Check the normal balance for Delivery Expense (expense).":null,"Enter a whole KSh amount and choose a column.":null,"Subtract the smaller total from the larger and identify the smaller column.":null,"Compare the source amount with both legs of the entry.":null,"The bank credit is present. Trade Payables is missing its KSh 15,000 debit.":null,"The debit was keyed as 5,400 instead of 4,500. The KSh 900 difference divides by nine.":null,"Posted. Suspense balance: Credit KSh 900.":null,"Posted. Suspense balance: Debit KSh 15,000.":null,"Posted. Suspense balance: Nil.":null,"Preview: suspense would be Debit KSh 15,000.":null,"Preview: suspense would be Debit KSh 14,100.":null,"Preview: suspense would be Debit KSh 13,200.":null,"Preview: suspense would be Debit KSh 900.":null,"Preview: suspense would be Nil.":null,"Preview: suspense would be Credit KSh 900.":null,"Preview: suspense would be Credit KSh 1,800.":null,"Bank has already been credited.":null,"Compare the journal with the specific missing or excess amount.":null,"Choose another entry.":null,"Prediction matches the expected entry.":null,"Compare your prediction with the expected entry.":null,"The system posted correctly.":null,"The totals agree. Check which account received the debit.":null,"The system posted unequal amounts.":null,"Predict both accounts before running this case.":null,"Choose the rule or routine to revise.":null,"That change would leave this posting error in place. Compare the expected and actual legs.":null,"Routine revised. The rerun matches the expected posting.":null,"All ten cases pass. Confirm the report to unlock handover.":null,"Investigate each failing case, revise its routine and run all ten again.":null,"Explain the reasoning in your own words.":null,"Recall T10. Both sides agreed when the purchase was charged to Delivery Expense.":null,"Include how you traced the difference and what equal totals can conceal.":null,"Complete all three parts of your explanation.":null,"Open the rule sheet and inspect each of the five draft entries.":null,"Hint: consider the account type and whether its balance rises or falls.":null,"Hint: check both account names and both amounts, even when the totals agree.":null};
+const soundClips={"ambience":"assets/audio/sfx/shop-ambience.mp3","chime":"assets/audio/sfx/door-chime.mp3","till":"assets/audio/sfx/till.mp3","phone":"assets/audio/sfx/phone.mp3","confirm":"assets/audio/sfx/confirm.mp3","correction":"assets/audio/sfx/correction.mp3","music":null};
+```
+
 ## Routing, actions, persistence and review modal
 **Source**: `app/app.js`  
 **Actions**: mark, reset, close; all guards and events above
-This controller owns the active page, grading events, idempotent corrections and repairs, transient inspector selections, dialogue timers and local saving.
+This controller owns the active page, grading events, idempotent corrections and repairs, transient inspector selections, dialogue timers, audio hand-offs (audio.js) and local saving.
 
 ```javascript
 let s;
 try{s=JSON.parse(localStorage.getItem(SAVE));if(!s||s.v!==1)throw Error()}catch{s=fresh()}
-let ui={sample:-1,evidence:-1,err:0,cue:0,paused:false,message:'',failedStorage:false};
+let ui={sample:-1,evidence:-1,err:0,cue:0,recap:0,paused:false,message:'',failedStorage:false};
 let timer,idle,cueDeadline=0,cueRemaining=null;
 const root=document.querySelector('#app');
 const view={audit,action:actionPage,mapping,sort:sortPage,difference,trace:tracePage,correct:correctPage,test:testPage,regression,handover,debrief,finish:finishPage};
@@ -332,20 +465,29 @@ const introPages=['splash','cover','identity','intro','title'];
 const byId=id=>document.getElementById(id);
 const activeSection=()=>sections.findIndex(v=>v[1].includes(s.page));
 const supportedSpeech=()=>typeof speechSynthesis!=='undefined'&&typeof SpeechSynthesisUtterance!=='undefined';
+// Feedback and hints: recorded segments when every part of the line is recorded, otherwise the device voice.
 function say(line){
- if(!s.media.voice||!supportedSpeech())return;
- speechSynthesis.cancel();
+ const keys=segmentLine(line);if(!keys)console.debug('[unvoiced]',line);
+ if(!s.media.voice)return;
+ const clips=recordedOn()&&keys&&keys.map(k=>feedbackClips[k]);
+ if(clips&&clips.length&&clips.every(Boolean))playVoice(clips,line);else deviceSay(line);
+}
+function deviceSay(line){
+ if(!line||!s.media.voice||!supportedSpeech())return;
+ stopVoice();speechSynthesis.cancel();
  const voice=new SpeechSynthesisUtterance(line);voice.lang='en-KE';
  const match=speechSynthesis.getVoices().find(v=>v.lang.toLowerCase()==='en-ke');
  if(match)voice.voice=match;speechSynthesis.speak(voice);
 }
 function save(){try{localStorage.setItem(SAVE,JSON.stringify(s))}catch{ui.failedStorage=true}}
-function go(page){clearTimeout(timer);clearTimeout(idle);if(supportedSpeech())speechSynthesis.cancel();s.page=page;ui.message='';save();render();window.scrollTo(0,0);root.querySelector('h1')?.focus()}
+function go(page){clearTimeout(timer);clearTimeout(idle);if(supportedSpeech())speechSynthesis.cancel();stopVoice();if(!['intro','title'].includes(page))stopShopSound();s.page=page;ui.message='';save();render();window.scrollTo(0,0);root.querySelector('h1')?.focus()}
 function msg(line){ui.message=line;save();render();const box=byId('status');if(box)box.focus({preventScroll:false});say(line)}
 function render(){
- const panel=introPages.includes(s.page)?hero():workspace();
+ const recap=s.page==='debrief'&&!s.recapDone;
+ const panel=introPages.includes(s.page)?hero():recap?recapPage():workspace();
  root.innerHTML=panel+'<dialog id="dialog"></dialog>'+(ui.failedStorage?'<p role="alert">This browser could not save progress. Keep this tab open.</p>':'');
  if(s.page==='cover')mountCover();
+ if(recap)mountRecap();
  clearTimeout(idle);
  if(['audit','mapping','test'].includes(s.page))idle=setTimeout(()=>{
   if(byId('dialog')?.open||ui.message)return;
@@ -356,18 +498,18 @@ function render(){
 let opener;
 function modal(title,body){
  opener=document.activeElement;const d=byId('dialog');d.innerHTML='<div class="dialogHead"><h2 id="dialogTitle">'+title+'</h2>'+choice('close','Close')+'</div>'+body;d.setAttribute('aria-labelledby','dialogTitle');d.showModal();
- if(s.page==='intro'&&!ui.paused){holdCue();if(supportedSpeech())speechSynthesis.pause()}
- d.addEventListener('close',()=>{opener?.focus();if(s.page==='intro')render();if(s.page==='intro'&&!ui.paused){if(supportedSpeech())speechSynthesis.resume();scheduleCue()}},{once:true});
+ if(s.page==='intro'&&!ui.paused){holdCue();pauseVoice();pauseAmbience();if(supportedSpeech())speechSynthesis.pause()}
+ d.addEventListener('close',()=>{opener?.focus();if(ui.briefModal){ui.briefModal=false;stopVoice()}if(s.page==='intro')render();if(s.page==='intro'&&!ui.paused){if(supportedSpeech())speechSynthesis.resume();resumeVoice();resumeAmbience();scheduleCue()}},{once:true});
 }
 const val=id=>{const el=byId(id);return !el||el.value===''?null:Number(el.value)};
 function readPair(){const pair=[val('dr'),val('cr')];return pair.includes(null)?null:pair}
 function holdCue(){clearTimeout(timer);cueRemaining=Math.max(0,cueDeadline-Date.now())}
 function scheduleCue(){
  clearTimeout(timer);if(s.page!=='intro'||ui.paused)return;
- const delay=cueRemaining??[14500,12000,15500,15000,5000][ui.cue];cueRemaining=null;cueDeadline=Date.now()+delay;
- timer=setTimeout(()=>{if(ui.cue===4){go('title');return}ui.cue++;render();say(intro[ui.cue][1]);scheduleCue()},delay);
+ const delay=cueRemaining??cueHold(ui.cue,[14500,12000,15500,15000,5000][ui.cue]);cueRemaining=null;cueDeadline=Date.now()+delay;
+ timer=setTimeout(()=>{if(ui.cue===4){go('title');return}ui.cue++;render();introVoice(ui.cue);introSounds(ui.cue);scheduleCue()},delay);
 }
-function settingsText(){return '<label class="toggle"><input type="checkbox" id="captions" '+(s.media.captions?'checked':'')+'>Show subtitles</label><label class="toggle"><input type="checkbox" id="voice" '+(s.media.voice?'checked':'')+(supportedSpeech()?'':' disabled')+'>Read prompts aloud with this device</label><p>Written prompts are available throughout the simulation.</p>'+(s.page==='intro'?details('Read introduction',intro.map(([speaker,line])=>'<p><b>'+speaker+'</b> · '+line+'</p>').join('')):'')}
+function settingsText(){return '<label class="toggle"><input type="checkbox" id="captions" '+(s.media.captions?'checked':'')+'>Show subtitles</label><label class="toggle"><input type="checkbox" id="recorded" '+(recordedOn()?'checked':'')+'>Play recorded voices for Grace and the narrator</label><label class="toggle"><input type="checkbox" id="ambience" '+(soundsOn()?'checked':'')+'>Play sounds: shop ambience, answer cues and music</label><label class="toggle"><input type="checkbox" id="voice" '+(s.media.voice?'checked':'')+(supportedSpeech()?'':' disabled')+'>Read feedback and hints aloud</label><p>Written prompts are available throughout the simulation.</p>'+(s.page==='intro'?details('Read introduction',intro.map(([speaker,line])=>'<p><b>'+speaker+'</b> · '+line+'</p>').join('')):'')}
 function startBranch(){s.started=s.started||new Date().toISOString();go('audit')}
 function required(message){msg(message)}
 function keepFocusMessage(line){const node=byId('status');if(node){node.textContent=line;node.focus()}say(line)}
@@ -376,7 +518,7 @@ function exportLog(){
  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Smart-Ledger-'+s.learner_id+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
-const pageControls={advanceSplash:'splash',skip:'intro',pause:'intro',start:'title',sample:'audit',auditNext:'audit',auditChoice:'action',configure:'action',map:'mapping',ledger:'mapping',column:'sort',readDifference:'sort',difference:'difference',evidence:'trace',type:'trace',correction:'trace',pickError:'correct',post:'correct',console:'correct',predict:'test',repair:'test',regression:'test',runAll:'regression',investigate:'regression',backTest:'regression',confirmReport:'regression',summary:'handover',submit:'handover',finish:'debrief',review:'finish',export:'finish',facilitator:'finish',mark:'finish',restart:'finish',reset:'finish'};
+const pageControls={advanceSplash:'splash',skip:'intro',pause:'intro',start:'title',sample:'audit',auditNext:'audit',auditChoice:'action',configure:'action',map:'mapping',ledger:'mapping',column:'sort',readDifference:'sort',difference:'difference',evidence:'trace',type:'trace',correction:'trace',pickError:'correct',post:'correct',console:'correct',predict:'test',repair:'test',regression:'test',runAll:'regression',investigate:'regression',backTest:'regression',confirmReport:'regression',summary:'handover',submit:'handover',recapNext:'debrief',recapBack:'debrief',recapDone:'debrief',toggleRecap:'debrief',finish:'debrief',review:'finish',export:'finish',facilitator:'finish',mark:'finish',restart:'finish',reset:'finish'};
 function respond(action,n){
  if(pageControls[action]&&pageControls[action]!==s.page)return;
  switch(action){
@@ -384,9 +526,9 @@ function respond(action,n){
  case 'enterCover':if(s.page==='cover')go('identity');break;
  case 'toggleCover':if(s.page==='cover')toggleCover();break;
  case 'skip':go('title');break;
- case 'pause':if(!ui.paused)holdCue();ui.paused=!ui.paused;if(supportedSpeech()){if(ui.paused)speechSynthesis.pause();else speechSynthesis.resume()}render();scheduleCue();break;
- case 'start':startBranch();say(briefings[0].join(' '));break;
- case 'brief':{const [gr,nar]=briefings[activeSection()];modal('Scene briefing','<p><b>Grace Achieng</b></p><p>'+gr+'</p><p><b>Narrator</b></p><p>'+nar+'</p>');say(gr+' '+nar);break}
+ case 'pause':if(!ui.paused)holdCue();ui.paused=!ui.paused;if(ui.paused){pauseVoice();pauseAmbience()}else{resumeVoice();resumeAmbience()}if(supportedSpeech()){if(ui.paused)speechSynthesis.pause();else speechSynthesis.resume()}render();scheduleCue();break;
+ case 'start':startBranch();briefVoice(0);break;
+ case 'brief':{const i=activeSection(),[gr,nar]=briefings[i];modal('Scene briefing','<p><b>Grace Achieng</b></p><p>'+gr+'</p><p><b>Narrator</b></p><p>'+nar+'</p>');ui.briefModal=true;briefVoice(i);break}
  case 'book':if(activeSection()===1)modal('June ledger book',ledgerBook());break;
  case 'settings':modal('Audio & captions',settingsText());break;
  case 'close':byId('dialog').close();if(s.page!=='intro'&&supportedSpeech())speechSynthesis.cancel();break;
@@ -404,7 +546,7 @@ function respond(action,n){
   if(s.log.filter(e=>e.task==='map'&&e.item===i).length>=2){feedback+=' Hint: '+r[3];record(s,'hint',i,'Second rule attempt',true)}
   msg(feedback);break;
  }
- case 'ledger':if(Object.keys(s.mappings).length===6){go('sort');say(briefings[1].join(' '))}break;
+ case 'ledger':if(Object.keys(s.mappings).length===6){go('sort');briefVoice(1)}break;
  case 'column':{
   const v=ledger(s),i=v.findIndex((x,j)=>!s.columns[j]);if(i===-1)return;
   const side=['Debit','Credit'][n],ok=(v[i]>0)===(n===0);record(s,'column',i,side,ok);
@@ -430,7 +572,7 @@ function respond(action,n){
   const delta=i===0?(n===1?0:-14100):(n===0?0:-900);
   msg('Preview: suspense would be '+balance(suspense(s)+delta)+'. '+(i===0&&n===1?'Bank has already been credited.':'Compare the journal with the specific missing or excess amount.')+' Choose another entry.');break;
  }
- case 'console':if(s.posted.length===2&&suspense(s)===0){go('test');say(briefings[2].join(' '))}break;
+ case 'console':if(s.posted.length===2&&suspense(s)===0){go('test');briefVoice(2)}break;
  case 'predict':{
   const i=s.selected;if(s.runs[i])return;const p=readPair();if(!p)return keepFocusMessage('Predict both accounts before running this case.');
   const a=entry(s,i),ok=p[0]===cases[i][2]&&p[1]===cases[i][3];s.runs[i]={pred:p,actual:a,initial:a};record(s,'predict',i,p.map(j=>accounts[j]),ok);
@@ -448,20 +590,24 @@ function respond(action,n){
  case 'backTest':go('test');break;
  case 'confirmReport':if(s.report?.length===10&&s.report.every(a=>a.pass))go('handover');break;
  case 'summary':record(s,'summary',0,handovers[n],n===0);s.summary=n;msg(n===0?'Explain the reasoning in your own words.':n===1?'Recall T10. Both sides agreed when the purchase was charged to Delivery Expense.':'Include how you traced the difference and what equal totals can conceal.');break;
- case 'submit':if(s.summary!==0||!s.report?.every(a=>a.pass))return;if(s.rationale.some(x=>!x.trim()))return keepFocusMessage('Complete all three parts of your explanation.');s.marks=suggestMarks(s.rationale);go('debrief');break;
- case 'finish':s.completed=s.completed||new Date().toISOString();go('finish');break;
+ case 'submit':if(s.summary!==0||!s.report?.every(a=>a.pass))return;if(s.rationale.some(x=>!x.trim()))return keepFocusMessage('Complete all three parts of your explanation.');s.marks=suggestMarks(s.rationale);ui.recap=0;go('debrief');break;
+ case 'recapNext':if(!s.recapDone)showRecap(1);break;
+ case 'recapBack':if(!s.recapDone)showRecap(0);break;
+ case 'recapDone':s.recapDone=true;go('debrief');break;
+ case 'toggleRecap':toggleRecap();break;
+ case 'finish':s.completed=s.completed||new Date().toISOString();go('finish');closingVoice();break;
  case 'review':go('debrief');break;
  case 'export':exportLog();break;
  case 'facilitator':modal('Facilitator review','<p>Review the learner’s own explanation. Award one mark for each demonstrated criterion.</p>'+rationalePrompts.map((p,i)=>'<hr><b>'+p+'</b><p>'+escapeHTML(s.rationale[i])+'</p><label class="toggle"><input id="mark'+i+'" type="checkbox" '+(s.marks[i]?'checked':'')+'>Criterion met</label>').join('')+button('mark','Save reviewed marks'));break;
  case 'mark':s.marks=rationalePrompts.map((p,i)=>byId('mark'+i).checked);s.manual=true;record(s,'review',0,s.marks.map(v=>v?'Met':'Revisit'),true);go('debrief');break;
  case 'restart':modal('Start a new attempt?','<p>This replaces the saved attempt on this device. Export your test log first if you need a copy.</p>'+button('reset','Start new attempt'));break;
- case 'reset':s=fresh();ui={...ui,sample:-1,evidence:-1,err:0,cue:0,paused:false};go('cover');break;
+ case 'reset':s=fresh();ui={...ui,sample:-1,evidence:-1,err:0,cue:0,recap:0,paused:false};go('cover');break;
  }
 }
 root.addEventListener('click',e=>{const b=e.target.closest('button[data-do]');if(b&&!b.disabled)respond(b.dataset.do,Number(b.dataset.val))});
-root.addEventListener('submit',e=>{e.preventDefault();if(e.target.id!=='identity')return;const n=byId('name').value.trim();if(!n){byId('name').setCustomValidity('Enter a name.');byId('name').reportValidity();return}s.name=n;ui.cue=0;cueRemaining=null;go('intro');say(intro[0][1]);scheduleCue()});
+root.addEventListener('submit',e=>{e.preventDefault();if(e.target.id!=='identity')return;const n=byId('name').value.trim();if(!n){byId('name').setCustomValidity('Enter a name.');byId('name').reportValidity();return}s.name=n;ui.cue=0;cueRemaining=null;go('intro');introVoice(0);introSounds(0);scheduleCue()});
 root.addEventListener('input',e=>{if(e.target.id==='name')e.target.setCustomValidity('');const k=e.target.dataset.save;if(!k)return;if(k==='note')s.note=e.target.value;else if(k[0]==='r')s.rationale[Number(k.slice(1))]=e.target.value;else s.reflection[Number(k.slice(1))]=e.target.value;save()});
-root.addEventListener('change',e=>{const el=e.target;if(el.id==='repairPick')root.querySelector('[data-do=repair]').disabled=el.value==='';if(el.id==='casePick'){s.selected=Number(el.value);ui.message='';save();render();byId('casePick')?.focus()}if(el.id==='lesson'){s.lesson=el.value;save()}if(el.id==='captions'||el.id==='voice'){s.media[el.id]=el.checked;save();if(el.id==='voice'&&!el.checked&&supportedSpeech())speechSynthesis.cancel()}});
+root.addEventListener('change',e=>{const el=e.target;if(el.id==='repairPick')root.querySelector('[data-do=repair]').disabled=el.value==='';if(el.id==='casePick'){s.selected=Number(el.value);ui.message='';save();render();byId('casePick')?.focus()}if(el.id==='lesson'){s.lesson=el.value;save()}if(['captions','voice','recorded','ambience'].includes(el.id)){s.media[el.id]=el.checked;save();if(el.id==='voice'&&!el.checked&&supportedSpeech())speechSynthesis.cancel();if(el.id==='recorded'&&!el.checked)stopVoice();if(el.id==='ambience'){if(el.checked)resumeAmbience();else stopShopSound()}}});
 render();if(s.page==='splash')timer=setTimeout(()=>go('cover'),1800);if(s.page==='intro')scheduleCue();
 ```
 

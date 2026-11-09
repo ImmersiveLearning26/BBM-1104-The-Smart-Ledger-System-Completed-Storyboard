@@ -3,7 +3,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
 const dir=path.resolve(__dirname,'..'),b=await chromium.launch({headless:true, ...(process.env.LEDGER_BROWSER ? {executablePath:process.env.LEDGER_BROWSER,args:['--no-sandbox','--use-gl=angle','--use-angle=swiftshader','--no-zygote']} : {})});
 try{
 const output=fs.mkdtempSync(path.join(require('node:os').tmpdir(),'ledger-qa-'));
-const p=await b.newPage({viewport:{width:1440,height:900},reducedMotion:'reduce'});const faults=[];p.on('pageerror',e=>faults.push(String(e)));
+const p=await b.newPage({viewport:{width:1440,height:900},reducedMotion:'reduce'});const faults=[],unvoiced=[];p.on('pageerror',e=>faults.push(String(e)));p.on('console',m=>{if(m.text().startsWith('[unvoiced]'))unvoiced.push(m.text())});
 const click=async(id,v)=>p.locator('[data-do="'+id+'"]'+(v===undefined?'':'[data-val="'+v+'"]')).click();
 const shot=async(id)=>{await p.evaluate(()=>document.fonts.ready);await p.screenshot({path:path.join(process.env.LEDGER_SCREEN_DIR||output,id+'.png')})};
 const set=async(id,v)=>p.selectOption('#'+id,String(v));
@@ -36,6 +36,6 @@ await p.getByText('Record a lesson',{exact:true}).click();await set('lesson','Tr
 const dl=p.waitForEvent('download');await click('export');const download=await dl;await download.saveAs(path.join(output,'example-log.json'));await click('restart');await click('close');assert.equal(await get('page'),'finish');await p.reload();assert.equal(await get('page'),'finish');
 await p.goto('file://'+dir+'/app/facilitator.html');await p.setInputFiles('#logs',path.join(output,'example-log.json'));await p.getByText('Mean strand scores').waitFor();await shot('F01-cohort');await p.setInputFiles('#logs',path.join(output,'example-log.json'));assert.match(await p.locator('#results').textContent(),/1 unique/);
 await p.goto('file://'+dir+'/app/index.html');await click('restart');await click('reset');assert.equal(await get('page'),'cover');await click('enterCover');assert.equal(await get('page'),'identity');await p.setViewportSize({width:390,height:844});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await p.fill('#name','Alex');await p.locator('form button').click();await click('skip');await click('start');assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
-assert.deepEqual(faults,[]);console.log('PASS: end-to-end, both correction orders, negative inputs, retries, regression failure and repair, manual marking, cohort import, resume, reset, mobile width and page error checks.');
+assert.deepEqual(faults,[]);assert.deepEqual(unvoiced,[],'every feedback line is in production/voice-lines.json');console.log('PASS: end-to-end, both correction orders, negative inputs, retries, regression failure and repair, manual marking, cohort import, resume, reset, mobile width, page error and voice-script coverage checks.');
 }finally{await b.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});

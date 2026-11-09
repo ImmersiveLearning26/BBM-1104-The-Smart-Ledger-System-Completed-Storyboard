@@ -23,7 +23,8 @@ function entry(s,i){
  }
  return {d,c,da,ca,balanced:da===ca,pass:d===dr&&c===cr&&da===amount&&ca===amount};
 }
-function record(s,task,item,choice,correct){s.log.push({time:new Date().toISOString(),task,item,choice,correct})}
+let onRecord=null; // optional listener (app/audio.js plays answer cues)
+function record(s,task,item,choice,correct){s.log.push({time:new Date().toISOString(),task,item,choice,correct});if(onRecord)onRecord(task,correct)}
 const first=(s,task,item)=>s.log.find(e=>e.task===task&&e.item===item);
 function grade(s){
  const fraction=(task,n)=>Array.from({length:n},(_,i)=>Number(first(s,task,i)?.correct||false)).reduce((a,b)=>a+b,0)/n;

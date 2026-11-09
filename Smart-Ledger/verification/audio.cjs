@@ -44,5 +44,29 @@ await p.evaluate(()=>{const x=fresh();Object.assign(x,{mappings:Object.fromEntri
 await p.reload();await p.locator('[data-do=finish]').click();await p.waitForTimeout(300);x=await st(p);assert.equal(x.v,'closing-grace.mp3');
 // old saves without the new media keys default to on
 await p.evaluate(()=>{const x=JSON.parse(localStorage.getItem(SAVE));x.media={captions:true,voice:false};localStorage.setItem(SAVE,JSON.stringify(x))});await p.reload();assert.deepEqual(await p.evaluate(()=>[recordedOn(),soundsOn()]),[true,true]);
-assert.deepEqual(faults,[]);console.log('PASS: intro voice+chime+ambience, pause/resume holds position, settings pause, cue advance+till, skip, briefing sequence, briefing modal, toggles+persistence, blocked audio, closing line, old-save defaults.');
+// 4. feedback segments, answer cues, recorded-vs-device fallback, recap narration
+p=await b.newPage();p.on('pageerror',e=>faults.push('feedback: '+e));
+const plays=[];await p.exposeFunction('logPlay2',x=>plays.push(x));
+await p.addInitScript(()=>{const o=HTMLMediaElement.prototype.play;HTMLMediaElement.prototype.play=function(){window.logPlay2&&window.logPlay2(String(this.currentSrc||this.src).split('/').pop());return o.call(this)};
+ window.__spoken=[];window.speechSynthesis&&(speechSynthesis.speak=u=>window.__spoken.push(u.text))});
+await p.goto('file://'+app+'/index.html');
+const seg=await p.evaluate(()=>[segmentLine('Check the debit account (asset). Hint: '+rules[0][3]),segmentLine('Saved. '+rules[5][3]),segmentLine('This sentence is not in the script.')]);
+assert.equal(seg[0].length,3,'debit check + Hint + rule');assert.equal(seg[1].length,2,'Saved + rule');assert.equal(seg[2],null,'unknown text is not voiced');
+// answer cues
+await p.evaluate(()=>{record(s,'map',0,'x',true);record(s,'map',1,'x',false);record(s,'hint',0,'x',true)});await p.waitForTimeout(200);
+assert(plays.includes('confirm.mp3')&&plays.includes('correction.mp3'),'cues '+plays);assert.equal(plays.filter(x=>/confirm|correction/.test(x)).length,2,'hints make no cue');
+await p.evaluate(()=>{s.media.ambience=false});plays.length=0;await p.evaluate(()=>record(s,'map',2,'x',true));await p.waitForTimeout(150);assert.equal(plays.length,0,'cues follow the sounds switch');
+// feedback voice off by default: nothing spoken
+await p.evaluate(()=>say('Saved.'));assert.deepEqual(await p.evaluate(()=>window.__spoken),[]);
+// voice on, line not recorded yet -> device voice
+await p.evaluate(()=>{s.media.voice=true;say('Choose another entry.')});assert.deepEqual(await p.evaluate(()=>window.__spoken),['Choose another entry.']);
+// voice on, every segment recorded -> recorded clips in order (after a click, as feedback always follows one)
+await p.locator('[data-do=advanceSplash]').click();
+await p.evaluate(()=>{feedbackClips['Saved.']={src:'assets/audio/voice/intro-4.mp3'};feedbackClips[rules[5][3]]={src:'assets/audio/voice/closing-grace.mp3'};say('Saved. '+rules[5][3])});
+await p.waitForTimeout(300);assert.equal(await p.evaluate(()=>voiceEl.src.split('/').pop()),'intro-4.mp3');
+await p.waitForFunction(()=>voiceEl.src.endsWith('closing-grace.mp3'),null,{timeout:8000});
+// recap narration with no recording and voice off: silent, no error
+await p.evaluate(()=>{s.media.voice=false;stopVoice();window.__spoken.length=0;recapVoice(0);recapVoice(1)});assert.deepEqual(await p.evaluate(()=>window.__spoken),[]);
+await p.close();
+assert.deepEqual(faults,[]);console.log('PASS: intro voice+chime+ambience, pause/resume holds position, settings pause, cue advance+till, skip, briefing sequence, briefing modal, toggles+persistence, blocked audio, closing line, old-save defaults, feedback segmenting, answer cues, recorded/device feedback fallback, recap narration.');
 await b.close();})().catch(e=>{console.error(e);process.exit(1)});
