@@ -11,6 +11,9 @@ python3 -m http.server 8000 --directory Smart-Ledger/app
 
 Then open http://localhost:8000/. Opening `Smart-Ledger/app/index.html` directly also works. `Smart-Ledger/app/facilitator.html` imports exported learner logs for cohort review.
 
+## Agent-led prototype (branch `agentic-flow`)
+`Smart-Ledger/app/agent.html` is a guided version of the opening through the six posting rules. Smart Ledger shows one thing at a time on Grace's screen, the learner makes the call, and the system runs it and reveals the result. It uses the same scoring and saved attempt as the main build, and hands over to it at the June ledger.
+
 ## What's inside
 | Path | Content |
 |---|---|

@@ -34,3 +34,13 @@ Run the included accounting checks and browser walkthrough; also test a blocked 
 - 80 scripted lines are not recorded yet (`"recorded": false` in production/voice-lines.json). The steps are in production/Audio.md.
 - The recap music bed (app/assets/audio/music/debrief-bed.mp3) is an empty slot. The prompt is in production/Audio.md.
 - Have a Kenyan-English speaker approve both voices.
+
+## Agent-led flow (prototype, branch agentic-flow)
+app/agent.html (agent.js, agent.css) presents the opening through the six posting rules as a guided flow. index.html is unchanged and remains the complete build.
+
+- **Each step has four beats:** the situation in one line; the evidence on Grace's screen (one Smart Ledger window showing only what matters now); the learner's call (one structured input); then Smart Ledger runs it and reveals the result.
+- **The learner does the thinking.** The agent never supplies an answer, and the expected posting stays hidden until the learner has chosen the rule-by-rule comparison.
+- **Scripted, not a live model.** All prompts and feedback are fixed text, so scoring is consistent and the app runs offline.
+- **Same engine.** State, scoring, log, save key and feedback wording are those of app.js, so an attempt continues in index.html from the June ledger.
+- **One unscored addition:** a "Looks right / Looks wrong" call on each draft posting (log task `flag`, `s.agent.flags`), compared with the rule sheet in the reveal.
+- **Not yet converted:** trial balance, difference, error tracing, corrections, tests, handover and debrief. The agent's own prompts are on-screen text only; they are not in production/voice-lines.json yet.
