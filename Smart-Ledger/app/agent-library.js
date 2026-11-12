@@ -138,6 +138,19 @@ function mount(root=document){
  root.querySelectorAll('[data-orb]').forEach(el=>{if(!el.orb)el.orb=new Orb(el,el.dataset.orb||'idle')});
  root.querySelectorAll('canvas[data-wave]').forEach(c=>{if(!c.wave)c.wave=new Wave(c,{gradient:c.dataset.wave==='gradient'})});
 }
-addEventListener('resize',()=>waves.forEach(w=>{w.fit();w.draw()}));
-return {Orb,Wave,result,close,icon,accountIcons,mount};
+// ---- Grid overlay (README section 3): ?grid in the address, or Alt+Shift+G. Never shown to learners. ----
+let overlay=null;
+function drawGrid(){
+ if(!overlay)return;const cols=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cols'))||12;
+ overlay.innerHTML='<div class="wrap"><div class="grid12">'+'<i></i>'.repeat(cols)+'</div></div>';
+}
+function grid(on=!overlay){
+ if(on&&!overlay){overlay=document.createElement('div');overlay.className='gridOverlay';overlay.setAttribute('aria-hidden','true');document.body.append(overlay);drawGrid()}
+ else if(!on&&overlay){overlay.remove();overlay=null}
+ return !!overlay;
+}
+addEventListener('keydown',e=>{if(e.altKey&&e.shiftKey&&e.code==='KeyG'){e.preventDefault();grid()}});
+if(new URLSearchParams(location.search).has('grid'))addEventListener('DOMContentLoaded',()=>grid(true));
+addEventListener('resize',()=>{waves.forEach(w=>{w.fit();w.draw()});drawGrid()});
+return {Orb,Wave,result,close,icon,accountIcons,mount,grid};
 })();
