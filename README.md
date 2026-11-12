@@ -9,10 +9,20 @@ The app is plain HTML, CSS and JavaScript with no build step and no dependencies
 python3 -m http.server 8000 --directory Smart-Ledger/app
 ```
 
-Then open http://localhost:8000/. Opening `Smart-Ledger/app/index.html` directly also works. `Smart-Ledger/app/facilitator.html` imports exported learner logs for cohort review.
+Then open **http://localhost:8000/agent.html**, the agent-led build. `Smart-Ledger/app/facilitator.html` imports exported learner logs for cohort review.
 
-## Agent-led prototype (branch `agentic-flow`)
-`Smart-Ledger/app/agent.html` is a guided version of the opening through the six posting rules. Smart Ledger shows one thing at a time on Grace's screen, the learner makes the call, and the system runs it and reveals the result. It uses the same scoring and saved attempt as the main build, and hands over to it at the June ledger.
+## The agent-led build
+`Smart-Ledger/app/agent.html` is the primary build. Smart Ledger, shown as an animated orb, works alongside the learner:
+- **It asks one question at a time**, with the evidence on Grace's own screen.
+- **The learner picks an answer** in the input box.
+- **The agent runs it**, with a waveform and glow while it works, then reveals the result in a single pop-up.
+
+It covers the opening through the six posting rules. The same attempt then continues at the June ledger in `index.html`, which uses the earlier workspace style until it is converted. Scoring, saving and audio are shared.
+
+Every visual comes from the agent design library, on a 4 px grid:
+- `Smart-Ledger/design/agent-library/` holds the rules and the three references.
+- `app/agent-library.html` is the live specimen.
+- Add `?grid` to any page address to see the grid.
 
 ## What's inside
 | Path | Content |
@@ -41,6 +51,8 @@ node verification/browser.cjs      # full learner walkthrough
 node verification/cover.cjs        # motion cover
 node verification/recap.cjs        # debrief recap
 node verification/audio.cjs        # voices and shop sound
+node verification/agent.cjs        # agent-led build, with the grid checked at every step
+node verification/grid.cjs         # 4 px grid and columns, library and agent build
 ```
 
 `Smart-Ledger/MANIFEST.sha256` lists a checksum for every kit file (`shasum -a 256 -c MANIFEST.sha256`).

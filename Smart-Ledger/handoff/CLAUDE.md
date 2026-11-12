@@ -35,8 +35,8 @@ Run the included accounting checks and browser walkthrough; also test a blocked 
 - The recap music bed (app/assets/audio/music/debrief-bed.mp3) is an empty slot. The prompt is in production/Audio.md.
 - Have a Kenyan-English speaker approve both voices.
 
-## Agent-led flow (prototype, branch agentic-flow)
-app/agent.html (agent.js, agent.css) presents the opening through the six posting rules as a guided flow. index.html is unchanged and remains the complete build.
+## Agent-led build (primary)
+app/agent.html (agent.js, agent.css) is the primary build. It presents the opening through the six posting rules as a guided, agent-led flow, then hands the same attempt to index.html at the June ledger. Convert the remaining stages to this style, using the same library and grid; don't extend the older workspace style.
 
 It is built only from the agent library: design/agent-library/README.md, app/agent-library.css and app/agent-library.js. The live specimen is app/agent-library.html. Take every colour, size and component from there, and keep every length on the 4 px grid. `node verification/grid.cjs` and `node verification/agent.cjs` fail on anything off the grid.
 
