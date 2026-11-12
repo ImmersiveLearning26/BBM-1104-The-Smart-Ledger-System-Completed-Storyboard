@@ -15,6 +15,7 @@ const settle=p=>p.evaluate(()=>Promise.all(document.getAnimations().filter(a=>a.
 const onGrid=async(p,where)=>{await settle(p);const r=await p.evaluate(audit);assert.deepEqual(r.bad,[],'off the grid at '+where)};
 // The one feedback channel: wait for the pop-up, read it, close it.
 const result=async p=>{const el=p.locator('.result');await el.waitFor();const text=await el.textContent();await p.evaluate(()=>AL.close(true));return text};
+const askText=p=>p.locator('#ask').textContent().then(t=>t.replace(/^Smart Ledger: /,''));
 const tile=(p,name)=>p.locator('#opts .tile',{hasText:new RegExp('^'+name+'$')});
 async function setRule(p,dr,cr){
  if(await p.locator('[data-do=slot]').count())await p.locator('[data-do=slot][data-val="0"]').click();
@@ -49,12 +50,20 @@ let x=await st(p);assert.deepEqual([x.scene,x.page,x.name],[4,'audit','Alex']);
 assert.equal(await p.evaluate(()=>voiceEl.src.split('/').pop()),'brief-0-grace.mp3');
 assert.equal(await p.evaluate(()=>ambienceEl.paused),true,'shop sound stops in the workspace');
 // Library rules: no logo mark, no progress furniture, the orb is the agent
-assert.equal(await p.locator('.brand,.prog,#trail,.runSteps,.note,.dots').count(),0,'no logo, progress bar, trail, checklist or inline notes');
+assert.equal(await p.locator('.brand,.prog,#trail,.runSteps,.note,.dots,.hdr,dialog').count(),0,'no logo, header, progress bar, trail, checklist, inline notes or centred dialogs');
 assert.equal(await p.locator('#agentOrb canvas').count(),1);
 const furniture=/\b\d+ of \d+\b|Rule \d|reviewed|flagged|more to set/i;
 // Review: one posting at a time, the expected posting stays hidden
 assert.match(await p.locator('#obj').textContent(),/S-01.*Cash sale.*KSh 20,000.*Cash.*Sales/);
-assert.equal(await p.locator('.story').count(),1,'Grace is on screen for her request');
+assert.equal(await p.locator('.portrait video').count(),1,'Grace fills her side of the screen');
+assert.match(await p.locator('.msg.grace').textContent(),/Some of these look wrong to me/);
+assert.equal(await p.locator('#composer.attn').count(),1,'the input box glows while it waits');
+// Settings are icons that open in place
+const ib=p.locator('.ibtn[data-do=recorded]');await ib.hover();await p.waitForTimeout(450);assert((await ib.boundingBox()).width>100,'hover opens the label');
+await ib.click();assert.equal(await p.evaluate(()=>s.media.recorded),false);assert.equal(await ib.getAttribute('aria-pressed'),'false');await ib.click();assert.equal(await p.evaluate(()=>s.media.recorded),true);
+// The rule sheet arrives as a card in the chat, and leaves when asked
+await p.locator('[data-do=sheet]').click();assert.match(await p.locator('.sheetMsg').textContent(),/Rule sheet.*Assets.*Debit/);assert.equal(await p.locator('[data-do=sheet]').getAttribute('aria-pressed'),'true');
+await p.locator('[data-do=sheet]').click();assert.equal(await p.locator('.sheetMsg').count(),0);
 await onGrid(p,'review');
 for(const call of [0,1,1,0,0]){
  assert.doesNotMatch(await p.locator('#obj').textContent(),/Trade Receivables|Rule sheet/,'expected posting stays hidden during review');
@@ -78,19 +87,20 @@ x=await st(p);assert.deepEqual([x.first,x.compared],[0,true]);
 await onGrid(p,'comparison');
 await p.locator('[data-do=fix]').click();
 // Rule 1: swapped, wrong account twice (hint), then right
-assert.match(await p.locator('#ask').textContent(),/^Owner invests cash\. Which account do I debit/);
+assert.match(await askText(p),/^Owner invests cash\. Which account do I debit/);
 assert.equal(await p.locator('#send').isDisabled(),true);
 await tile(p,'Capital').click();assert.equal(await p.locator('#send').isDisabled(),true,'needs both accounts');
 await tile(p,'Cash').click();
 assert.equal(await p.evaluate(()=>document.activeElement.id),'send','focus lands on send');
+assert.equal(await p.locator('#send.attn').count(),1,'the glow moves to send once it is ready');assert.equal(await p.locator('#composer.attn').count(),0);
 assert.match(await p.locator('#obj .row.now').textContent(),/Owner invests cash\s*Capital · Cash/);
 await onGrid(p,'rule picker');
-const boxes=()=>p.evaluate(()=>['talk','screen','reply','composer'].map(id=>{const r=document.getElementById(id).getBoundingClientRect();return [r.x,r.y,r.width,r.height].map(Math.round).join()}));
+const boxes=()=>p.evaluate(()=>['portrait','thread','reply','composer'].map(id=>{const r=document.getElementById(id).getBoundingClientRect();return [r.x,r.y,r.width,r.height].map(Math.round).join()}));
 const before=await boxes();
 await p.locator('#send').click();
 assert.equal(await p.locator('#send.running').count(),1,'the glow orbits the send button');
 assert.equal(await p.evaluate(()=>document.getElementById('agentOrb').dataset.state),'building');
-assert.match(await p.locator('#ask').textContent(),/^Owner invests cash/,'the question stays on this rule while the agent works');
+assert.match(await askText(p),/^Owner invests cash/,'the question stays on this rule while the agent works');
 assert.equal(await p.evaluate(()=>getComputedStyle(document.getElementById('pillWave')).display),'block');
 const pill=await p.locator('.pill').boundingBox(),send=await p.locator('#send').boundingBox();
 assert(send.x+send.width<=pill.x+pill.width+.5,'send stays inside the pill while the wave runs');
@@ -101,10 +111,12 @@ assert.match(await setRule(p,'Bank','Capital'),/Check the debit account \(asset\
 assert.match(await setRule(p,'Cash','Capital'),/^Saved\. Cash comes into the shop/);
 assert.match(await p.locator('#obj .t').textContent(),/Debit\s*Cash\s*50,000\s*Credit\s*Capital\s*50,000/);
 assert.equal(await p.locator('#composer').isHidden(),true,'the picker closes once the rule is saved');
+assert.equal(await p.locator('[data-do=nextRule].attn').count(),1,'the next action glows');
+assert.match(await p.locator('.msg.me').last().textContent(),/Debit Cash · Credit Capital/,'the answer joins the chat');
 await onGrid(p,'saved rule with T-account');
 await p.locator('[data-do=nextRule]').click();
 // Reload mid-flow resumes on the next rule
-await p.reload();assert.match(await p.locator('#ask').textContent(),/^Cash sale\./);
+await p.reload();assert.match(await askText(p),/^Cash sale\./);
 // Keyboard: pick both accounts and run without the mouse
 await tile(p,'Cash').focus();await p.keyboard.press('Enter');
 await tile(p,'Sales').focus();await p.keyboard.press('Enter');
@@ -116,8 +128,9 @@ for(const [dr,cr] of [['Inventory','Trade Payables'],['Rent Expense','Bank'],['B
  assert.match(await setRule(p,dr,cr),/^Saved/);await p.locator('[data-do=nextRule]').click();
 }
 x=await st(p);assert.equal(x.maps,6);
-assert.match(await p.locator('#ask').textContent(),/All six rules are saved/);
+assert.match(await askText(p),/All six rules are saved/);
 assert.equal(await p.locator('#obj .row').count(),6);
+assert(await p.locator('.msg.past').count()>20,'the chat keeps its history');
 await onGrid(p,'end');
 // Scoring is the classic engine's: 5 of 6 rules right first time, audit approach wrong first time
 const g=await p.evaluate(()=>({pr:grade(s).strands[0],tries:s.log.filter(e=>e.task==='map').length,tasks:[...new Set(s.log.map(e=>e.task))]}));
@@ -126,8 +139,8 @@ assert.equal(Math.round(g.pr*100)/100,83.33);assert.equal(g.tries,8);assert.deep
 await p.locator('[data-do=handoff]').click();await p.waitForURL(/index\.html$/);
 assert.equal(await p.locator('h1').textContent(),'Extract the trial balance');
 assert.equal(await p.evaluate(()=>Object.keys(s.mappings).length),6);
-await p.goto(url);assert.match(await p.locator('#ask').textContent(),/All six rules are saved/);
-await p.locator('[data-do=restart]').first().click();await p.locator('[data-do=reset]').click();
+await p.goto(url);assert.match(await askText(p),/All six rules are saved/);
+await p.locator('[data-do=restart]').click();assert.equal((await st(p)).maps,6,'one tap only arms the restart');await p.locator('[data-do=restart]').click();
 assert.equal(await p.locator('h1').textContent(),'Month-endat Zuri.');assert.equal((await st(p)).maps,0);
 await p.close();
 
@@ -137,8 +150,8 @@ await onGrid(p,'phone review');
 await toApproach(p,[1,1,1,1,1]);
 await p.locator('[data-do=approach][data-val="1"]').click();await result(p);await p.locator('[data-do=fix]').click();
 assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth),390);
-const order=await p.evaluate(()=>['talk','screen','reply'].map(id=>document.getElementById(id).getBoundingClientRect().top));
-assert(order[0]<order[1]&&order[1]<order[2],'question, screen, reply in order');
+const order=await p.evaluate(()=>['portrait','thread','reply'].map(id=>document.getElementById(id).getBoundingClientRect().top));
+assert(order[0]<order[1]&&order[1]<order[2],'Grace, the chat, then the input box');
 for(const el of await p.locator('#reply button:visible').all())assert((await el.boundingBox()).height>=44,'touch targets');
 await onGrid(p,'phone rule picker');
 await p.close();
@@ -160,5 +173,5 @@ assert.match(await setRule(p,'Cash','Capital'),/^Saved/);assert.equal((await st(
 await p.close();
 
 assert.deepEqual(faults,[]);assert.deepEqual(unvoiced,[],'every feedback line is in production/voice-lines.json');
-console.log('PASS: agent flow on the library — opening, her screen in scene, name gate, hidden expected postings, no progress furniture, audit retry, run before reveal, comparison, picker, swapped/hint/saved via the pop-up, glow + building orb + wave with no layout shift, T-account, reload, keyboard, six rules, classic scoring, hand-off, restart, 390px, reduced motion, blocked media, 4 px grid at every step.');
+console.log('PASS: agent chat on the library — portrait, chat history, pinned input, attention glow, icon settings, rule sheet card, opening, her screen in scene, name gate, hidden expected postings, no progress furniture, audit retry, run before reveal, comparison, picker, swapped/hint/saved via the pop-up, glow + building orb + wave with no layout shift, T-account, reload, keyboard, six rules, classic scoring, hand-off, restart, 390px, reduced motion, blocked media, 4 px grid at every step.');
 await b.close();})().catch(e=>{console.error(e);process.exit(1)});

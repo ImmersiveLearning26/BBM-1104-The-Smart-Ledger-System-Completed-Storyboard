@@ -75,6 +75,18 @@
  </div>
 </section>
 
+<section class="sec" aria-labelledby="s7"><div class="secHead"><h2 class="t-title" id="s7">Chat · glow · icon bar</h2><span class="src">R3 · R1 · Brief</span></div>
+ <div class="grid12">
+  <ol class="thread col-half">
+   <li class="msg grace past"><span class="av grace" aria-hidden="true"></span><div class="body"><p class="t-message">“Some of these look wrong to me.”</p></div></li>
+   <li class="msg agent past"><span class="av dot" aria-hidden="true"></span><div class="body"><p class="t-message">Does this posting look right to you?</p><div class="obj mini"><ul class="rows"><li class="row"><span>S-01 Cash sale</span><small>Cash / Sales</small></li></ul></div></div></li>
+   <li class="msg me past"><span class="av me" aria-hidden="true">M</span><div class="body"><p class="t-message">Looks right</p></div></li>
+   <li class="msg agent cur"><span class="av" data-orb></span><div class="body"><p class="t-message">Before I change anything, how should I check them?</p></div></li>
+  </ol>
+  <div class="stack col-half"><div class="iconbar" id="iconDemoBar"></div><div class="demoRow"><button class="btn-ink attn" type="button">Next rule</button><span class="t-caption dim">The glow marks the one thing to do next.</span></div></div>
+ </div>
+</section>
+
 <section class="sec" aria-labelledby="s6"><div class="secHead"><h2 class="t-title" id="s6">Rules</h2><span class="src">README §3</span></div><ol class="grid12" id="rules"></ol></section>
 </main>
 <script src="content.js"></script><script src="agent-library.js"></script>
@@ -117,6 +129,8 @@ $('orbStates').onclick=e=>{const b=e.target.closest('[data-state]');if(b)$('bigO
 $('waveToggle').onclick=()=>{const w=$('stageWave').wave,on=!w.active;w.set(on);$('glowDemo').classList.toggle('running',on);$('waveToggle').textContent=on?'Stop':'Start working'};
 document.querySelectorAll('[data-result]').forEach(b=>b.onclick=()=>AL.result(b.dataset.result==='pass'?'Saved. Cash comes into the shop. The owner’s capital increases.':'Sides swapped. Check which balance increases and which falls.',b.dataset.result));
 $('rules').innerHTML=[['One thing at a time','One question, one object, one composer.'],['No progress furniture','No step dots, counters or tallies.'],['One feedback channel','Orb pulse and the centre pop-up.'],['Nothing moves the layout','Work animates inside fixed boxes.'],['Filled, not outlined','Selection is a fill, never a stroke.'],['One accent per screen','Orange marks "this one".'],['Two sentences at most','Longer content belongs on the object.'],['Picks, not typing','For anything that is marked.'],['Glass talks, objects count','Ledger data sits on solid objects.'],['Reduced motion keeps every state','Shown by colour, not movement.']].map(([b,t])=>'<li class="rule col-third"><b>'+b+'</b>'+t+'</li>').join('');
+$('iconDemoBar').innerHTML=[{act:'x1',icon:'voice',label:'Recorded voices',on:true},{act:'x2',icon:'sound',label:'Sounds',on:false},{act:'x3',icon:'restart',label:'Start again'}].map(AL.iconButton).join('');
+$('iconDemoBar').onclick=e=>{const b=e.target.closest('.ibtn');if(!b)return;if(b.hasAttribute('aria-pressed')){const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);b.classList.toggle('on',on);AL.flash(b,b.dataset.label+(on?' on':' off'))}else AL.flash(b,'Tap again to start over')};
 compose();object();AL.mount();
 </script>
 </body></html>

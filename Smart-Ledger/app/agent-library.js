@@ -33,7 +33,11 @@ const paths={
  cross:'<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
  heading:'<path d="M5 5h14M12 5v14M8 19h8"/>',
  compare:'<rect x="3" y="5" width="7" height="14" rx="1.5"/><rect x="14" y="5" width="7" height="14" rx="1.5"/><path d="M10 12h4"/>',
- hide:'<path d="M3 12s3.5-6 9-6c2 0 3.7.8 5 1.8M21 12s-3.5 6-9 6c-2 0-3.7-.8-5-1.8M4 4l16 16"/>'
+ hide:'<path d="M3 12s3.5-6 9-6c2 0 3.7.8 5 1.8M21 12s-3.5 6-9 6c-2 0-3.7-.8-5-1.8M4 4l16 16"/>',
+ voice:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/>',
+ sound:'<path d="M4 9v6h4l5 4V5L8 9H4zM16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/>',
+ read:'<path d="M3 18 8 6l5 12M5 14h6M16 9.5a3.5 3.5 0 0 1 0 5M18.5 7a7 7 0 0 1 0 10"/>',
+ restart:'<path d="M5 12a7 7 0 1 0 2.1-5M5 4v4h4"/>'
 };
 const icon=(n,cls='')=>'<svg class="ic '+cls+'" viewBox="0 0 24 24" aria-hidden="true">'+paths[n]+'</svg>';
 // Curriculum order (content.js accounts), so the tile layout gives nothing away.
@@ -138,6 +142,13 @@ function close(instant){
 }
 addEventListener('keydown',e=>{if(e.key==='Escape')close()});
 
+// ---- Icon bar: icons that open into a labelled pill (hover, focus, or a brief flash after a click) ----
+function flash(btn,text,ms=1600){
+ const lab=btn.querySelector('.ibl');if(!lab)return;if(text)lab.textContent=text;
+ btn.classList.add('open');clearTimeout(btn.flashT);btn.flashT=setTimeout(()=>{btn.classList.remove('open');if(btn.dataset.label)lab.textContent=btn.dataset.label},ms);
+}
+const iconButton=({act,icon:i,label,on=null})=>'<button type="button" class="ibtn'+(on?' on':'')+'" data-do="'+act+'" data-label="'+label+'"'+(on===null?'':' aria-pressed="'+on+'"')+' aria-label="'+label+'"><span class="ibi">'+icon(i)+'</span><span class="ibl" aria-hidden="true">'+label+'</span></button>';
+
 // Mount every [data-orb] and [data-wave] inside a root.
 function mount(root=document){
  root.querySelectorAll('[data-orb]').forEach(el=>{if(!el.orb)el.orb=new Orb(el,el.dataset.orb||'idle')});
@@ -157,5 +168,5 @@ function grid(on=!overlay){
 addEventListener('keydown',e=>{if(e.altKey&&e.shiftKey&&e.code==='KeyG'){e.preventDefault();grid()}});
 if(new URLSearchParams(location.search).has('grid'))addEventListener('DOMContentLoaded',()=>grid(true));
 addEventListener('resize',()=>{waves.forEach(w=>{w.fit();w.draw()});drawGrid()});
-return {Orb,Wave,result,close,icon,accountIcons,mount,grid};
+return {Orb,Wave,result,close,icon,accountIcons,mount,grid,flash,iconButton};
 })();

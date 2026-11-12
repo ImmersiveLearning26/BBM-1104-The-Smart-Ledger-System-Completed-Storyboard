@@ -40,7 +40,8 @@ app/agent.html (agent.js, agent.css) is the primary build. It presents the openi
 
 It is built only from the agent library: design/agent-library/README.md, app/agent-library.css and app/agent-library.js. The live specimen is app/agent-library.html. Take every colour, size and component from there, and keep every length on the 4 px grid. `node verification/grid.cjs` and `node verification/agent.cjs` fail on anything off the grid.
 
-- **Each step has four beats:** the agent's question, shown as one line beside the orb; the evidence on Grace's screen, as a single solid object; the learner's pick, made in the input box; and the run, shown by the waveform, the send glow and the orb, with the reveal arriving through the centre pop-up.
+- **Layout:** Grace's video portrait fills one side. The other side is a chat with Smart Ledger, which keeps its history, with the input box pinned at the bottom as in ChatGPT or Claude. Settings are icons on the portrait that open in place. There are no dialogs.
+- **Each step has four beats:** the agent asks in the chat; Grace's screen arrives as a card under the question; the learner picks in the input box, and the one control waiting for them glows; then the agent runs it (waveform, send glow, orb) and the result arrives in the centre pop-up.
 - **No progress furniture:** no step dots, counters or running tallies, and no logo. The orb is the agent.
 - **The learner does the thinking.** The agent never supplies an answer, and the expected posting stays hidden until the learner has chosen the rule-by-rule comparison.
 - **Scripted, not a live model.** All prompts and feedback are fixed text, so scoring is consistent and the app runs offline.

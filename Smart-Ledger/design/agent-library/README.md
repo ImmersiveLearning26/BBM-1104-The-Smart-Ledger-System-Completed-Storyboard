@@ -205,6 +205,31 @@ Grace's Smart Ledger screen: an `--obj-canvas` surface with a 32 px radius.
 ### T-account `.t` (inside objects)
 Two `--obj-raised` cells under a 4 px ink bar, with a 4 px ink gap between them. The T is accounting content, so it is the one place an ink line is allowed.
 
+### Attention glow `.attn`
+The orb gradient, blurred into a halo behind **the one control waiting for the learner**. It turns once every 4 s and breathes every 2.4 s.
+- **What gets it:** the input box while it waits for a pick; the send button once both accounts are picked; the single next action (Begin, Continue, Fix the rules, Next rule).
+- **What never gets it:** more than one control at a time, or anything that isn't actionable.
+- **Reduced motion:** the halo stays still.
+
+### Icon bar `.iconbar` / `.ibtn`
+Settings and actions as 48 px glass icons (R3 circle buttons).
+- **Opening:** on hover or keyboard focus, an icon opens fluidly into a labelled pill (0.32 s). After a click it opens briefly to confirm the new state, e.g. "Sounds off".
+- **States:** on is filled white with ink; off is glass. A destructive action (Start again) arms on the first tap, turns red and says "Tap again to start over", and disarms after 3 s.
+- **Never** a centred settings dialog.
+
+### Portrait `.portrait` (R2 image card, full height)
+The character's side of the screen: the store video cropped on Grace, with a 32 px radius and pinned while the chat scrolls. The MIVA logo and the icon bar sit at the top; her name and role at the bottom. On phone and tablet it becomes a 200–240 px banner above the chat.
+
+### Chat thread `.thread` / `.msg` (R3 transcript, kept as history)
+The conversation, rebuilt from saved state so a reload restores it.
+- **Avatars:** Grace's photo for Grace, the learner's initial for the learner, a live orb on Smart Ledger's current message, and a still orb dot on its earlier messages.
+- **The current exchange** is full size, with Grace's screen posted beneath the question as a card.
+- **Earlier exchanges** step back: 16 px text at 85% white, and cards collapsed to a one-line `.obj.mini`. No counters.
+- **The rule sheet**, when asked for, arrives as its own card under the current question, and leaves when asked again.
+
+### Dock `.dock`
+The input box pinned to the bottom of the chat, as in ChatGPT or Claude: context chips, then the composer, then the next action. What scrolls beneath it is blurred, and the blur fades out over 64 px, so there is no box edge.
+
 ### Buttons
 | Class | Look | Source |
 |---|---|---|
@@ -264,13 +289,13 @@ Add `?grid` to the address, or press Alt+Shift+G. The column bands and 8 px line
 `node verification/grid.cjs` loads the pages at 1280, 900 and 390 px and fails if:
 - any computed padding, margin, gap, radius or line height is off the 4 px unit;
 - any component's height, or a fixed square's width, is off the unit;
-- any component's top edge is off a 4 px line;
+- any component's top edge is off a 4 px line, except inside pinned (sticky or fixed) surfaces, which move with scrolling and are checked for size only;
 - any `.grid12` block doesn't start and end on a column line, or a grid doesn't fill its `.wrap`.
 
 Run it after every visual change.
 
 ## 4. Rules
-1. **One thing at a time.** Each screen shows one question, one object and one composer.
+1. **One question at a time.** The chat keeps its history, but only the current exchange is full size, with one card and one input box.
 2. **No progress furniture:** no step dots, "1 of 6" counters, breadcrumbs or running tallies of what is done. Where the learner is should be clear from the story.
 3. **Feedback has one channel:** the orb pulses and the result pop-up. No inline coloured boxes, side strokes or status rows.
 4. **Nothing moves the layout.** Working states animate inside fixed boxes (the waveform, the orb, the send arc).
@@ -280,3 +305,5 @@ Run it after every visual change.
 8. **Picks, not typing,** for anything that is marked.
 9. **Glass for the conversation, objects for the accounting.** Ledger data never sits directly on glass.
 10. **Reduced motion keeps every state,** showing it by colour without movement.
+11. **Use the space with content, not decoration.** The character fills one side and the conversation the other.
+12. **The glow marks the one thing to do next**, and nothing else.

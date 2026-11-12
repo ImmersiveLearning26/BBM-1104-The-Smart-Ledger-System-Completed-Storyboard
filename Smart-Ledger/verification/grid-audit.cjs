@@ -12,9 +12,11 @@ function audit(){
   'borderTopLeftRadius','borderTopRightRadius','borderBottomLeftRadius','borderBottomRightRadius'];
  const sideMargins=el=>!el.matches('.wrap');   // .wrap centres itself with auto margins
  // Components whose height must snap, and fixed squares whose width must snap too.
- const heightOf='.hdr,.btn-ink,.btn-glass,.btn-raised,.chip,.pill,.token,.tile,.row,.objBar,.story,.composer,.line,.send,.icon-glass,.av,.orb,.appTile,.wave,.t>div,.src,.sw i';
+ const heightOf='.ibtn,.msg,.hdr,.btn-ink,.btn-glass,.btn-raised,.chip,.pill,.token,.tile,.row,.objBar,.story,.composer,.line,.send,.icon-glass,.av,.orb,.appTile,.wave,.t>div,.src,.sw i';
  const square='.send,.icon-glass,.av,.orb,.appTile';
  const docTop=-document.documentElement.getBoundingClientRect().top;
+ // Pinned surfaces (sticky or fixed) move with scrolling: their sizes are checked, their page position is not.
+ const pinned=el=>{for(let e=el;e&&e!==document.body;e=e.parentElement){const p=getComputedStyle(e).position;if(p==='sticky'||p==='fixed')return true}return false};
  for(const el of document.body.querySelectorAll('*')){
   if(skip(el)||!visible(el))continue;
   const cs=getComputedStyle(el);
@@ -24,7 +26,7 @@ function audit(){
    const r=el.getBoundingClientRect();
    if(off(r.height))bad.push(name(el)+' height '+r.height.toFixed(2));
    if(el.matches(square)&&off(r.width))bad.push(name(el)+' width '+r.width.toFixed(2));
-   if(cs.position!=='fixed'&&off(r.top+docTop))bad.push(name(el)+' top '+(r.top+docTop).toFixed(2));
+   if(!pinned(el)&&off(r.top+docTop))bad.push(name(el)+' top '+(r.top+docTop).toFixed(2));
   }
  }
  // Columns: each .grid12 fills its .wrap, and each block starts and ends on a column line.
