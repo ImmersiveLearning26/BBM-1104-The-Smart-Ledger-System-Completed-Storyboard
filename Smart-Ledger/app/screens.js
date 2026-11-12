@@ -1,4 +1,4 @@
-// GENERATED reference copy by handoff/build-replication-code.cjs. index.html does not load this file.
+// GENERATED reference copy by handoff/build-replication-code.cjs. review.html does not load it as a single file.
 // Edit app/shared.js and app/pages/*.js instead, then re-run the script.
 
 // ---- shared.js ----

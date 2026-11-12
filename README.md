@@ -9,15 +9,15 @@ The app is plain HTML, CSS and JavaScript with no build step and no dependencies
 python3 -m http.server 8000 --directory Smart-Ledger/app
 ```
 
-Then open **http://localhost:8000/agent.html**, the agent-led build. `Smart-Ledger/app/facilitator.html` imports exported learner logs for cohort review.
+Then open **http://localhost:8000/**, which is the agent-led build. `Smart-Ledger/app/facilitator.html` imports exported learner logs for cohort review.
 
 ## The agent-led build
-`Smart-Ledger/app/agent.html` is the primary build. Smart Ledger, shown as an animated orb, works alongside the learner:
+`Smart-Ledger/app/index.html` is the primary build. Smart Ledger, shown as an animated orb, works alongside the learner:
 - **It asks one question at a time**, with the evidence on Grace's own screen.
 - **The learner picks an answer** in the input box.
 - **The agent runs it**, with a waveform and glow while it works, then reveals the result in a single pop-up.
 
-It runs the whole simulation, from the opening to the debrief, which ends on the corrected June ledger. `index.html` opens the same attempt as a detailed review, with the decision log, reflection and facilitator marking. Scoring, saving and audio are shared.
+It runs the whole simulation, from the opening to the debrief, which ends on the corrected June ledger. `review.html` opens the same attempt as a detailed review in the earlier workspace style, with the decision log, reflection and facilitator marking. Scoring, saving and audio are shared.
 
 Every visual comes from the agent design library, on a 4 px grid:
 - `Smart-Ledger/design/agent-library/` holds the rules and the three references.

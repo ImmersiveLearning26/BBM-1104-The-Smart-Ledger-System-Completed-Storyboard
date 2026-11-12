@@ -1,10 +1,10 @@
 // Grid check (design/agent-library/README.md section 3).
 // Fails if anything on a page drifts off the 4 px unit or off the column lines.
-//   node verification/grid.cjs [page.html ...]   (default: agent-library.html and agent.html)
+//   node verification/grid.cjs [page.html ...]   (default: agent-library.html and index.html)
 // Run with the same Playwright setup as browser.cjs.
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),path=require('node:path');
 const app=path.join(__dirname,'../app');
-const pages=process.argv.slice(2).length?process.argv.slice(2):['agent-library.html','agent.html'];
+const pages=process.argv.slice(2).length?process.argv.slice(2):['agent-library.html','index.html'];
 const widths=[[1280,800],[900,900],[390,844]];
 
 const {audit}=require('./grid-audit.cjs');

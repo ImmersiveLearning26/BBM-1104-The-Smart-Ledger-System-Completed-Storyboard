@@ -1,6 +1,6 @@
 # Smart Ledger agent library
 
-This library defines every visual decision in the agent-led flow (app/agent.html). It was measured from three references; nothing outside it should be invented while building.
+This library defines every visual decision in the agent-led build (app/index.html). It was measured from three references; nothing outside it should be invented while building.
 
 - **Live specimen:** app/agent-library.html, which shows every token and component working.
 - **Code:** app/agent-library.css (tokens and components) and app/agent-library.js (orb, waveform, result pop-up).

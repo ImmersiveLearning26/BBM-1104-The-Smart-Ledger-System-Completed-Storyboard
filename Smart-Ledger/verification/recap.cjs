@@ -3,7 +3,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
 const app=path.resolve(process.argv[2]||path.join(__dirname,'../app')),out=process.argv[3]||require('node:fs').mkdtempSync(path.join(require('node:os').tmpdir(),'ledger-recap-'));
 (async()=>{
 const b=await chromium.launch({headless:true,...(process.env.LEDGER_BROWSER?{executablePath:process.env.LEDGER_BROWSER}:{})});
-const seed=async p=>{await p.goto('file://'+app+'/index.html');await p.evaluate(()=>{const x=fresh();Object.assign(x,{mappings:Object.fromEntries(rules.map((r,i)=>[i,[r[1],r[2]]])),page:'debrief',name:'Alex',posted:[0,1],repairs:['F1','F2','F3'],summary:0,marks:[true,true,true],rationale:['a','b','c']});x.report=cases.map((_,i)=>entry(x,i));localStorage.setItem(SAVE,JSON.stringify(x))});await p.reload();await p.locator('#recapTitle0').waitFor()};
+const seed=async p=>{await p.goto('file://'+app+'/review.html');await p.evaluate(()=>{const x=fresh();Object.assign(x,{mappings:Object.fromEntries(rules.map((r,i)=>[i,[r[1],r[2]]])),page:'debrief',name:'Alex',posted:[0,1],repairs:['F1','F2','F3'],summary:0,marks:[true,true,true],rationale:['a','b','c']});x.report=cases.map((_,i)=>entry(x,i));localStorage.setItem(SAVE,JSON.stringify(x))});await p.reload();await p.locator('#recapTitle0').waitFor()};
 const faults=[];
 for(const mode of ['normal','reduced','blocked','mobile']){
  const p=await b.newPage({viewport:mode==='mobile'?{width:390,height:844}:{width:1440,height:900},reducedMotion:mode==='reduced'?'reduce':'no-preference'});
@@ -36,7 +36,7 @@ for(const mode of ['normal','reduced','blocked','mobile']){
  await p.close();
 }
 // splash logo
-const p=await b.newPage({viewport:{width:1440,height:900}});await p.goto('file://'+app+'/index.html');await p.evaluate(()=>localStorage.clear());await p.reload();
+const p=await b.newPage({viewport:{width:1440,height:900}});await p.goto('file://'+app+'/review.html');await p.evaluate(()=>localStorage.clear());await p.reload();
 const logo=p.locator('.splash img');assert(await logo.evaluate(i=>i.complete&&i.naturalWidth>0));assert.equal(await logo.getAttribute('alt'),'MIVA Open University');await p.screenshot({path:out+'/splash.png'});
 assert.deepEqual(faults,[]);console.log('PASS: recap playback, pause/play, crossfade, focus, learner facts, reload, back, results, review, reduced motion, blocked media, 390px, splash logo.');
 await b.close();})().catch(e=>{console.error(e);process.exit(1)});

@@ -1,12 +1,12 @@
 # Smart Ledger · Claude replication kit
 
-**To play:** extract the whole ZIP and open **app/index.html**. Start on the silent motion cover, enter a fictional name, then open the ledger after Grace’s briefing. The app, two typefaces, photographs and cover video run offline.
+**To play:** extract the whole ZIP and open **app/index.html**, the agent-led build. app/review.html is the detailed review in the earlier workspace style, on the same attempt. Start on the silent motion cover, enter a fictional name, then open the ledger after Grace’s briefing. The app, two typefaces, photographs and cover video run offline.
 
 **To build with Claude:** upload the extracted folder or attach the ZIP in a Claude environment that can unpack it. Start with **[CLAUDE.md](handoff/CLAUDE.md)**. The complete page renderers are in **app/pages/**. For a copyable Markdown version with screen references, actions and transitions, use **[Page replication code](handoff/Page-replication-code.md)**.
 
 | Need | Where to look |
 |---|---|
-| Runnable learner / facilitator entry points | app/index.html, app/facilitator.html |
+| Runnable learner / facilitator entry points | app/index.html (agent build), app/review.html (detailed review), app/facilitator.html |
 | Fixed accounting activities and scoring | source/Storyboard.pdf, app/content.js, app/engine.js, handoff/Scoring.md |
 | Interaction handlers and saved state | app/app.js |
 | Screen references and page map | design/screens/, design/Screen-guide.md |

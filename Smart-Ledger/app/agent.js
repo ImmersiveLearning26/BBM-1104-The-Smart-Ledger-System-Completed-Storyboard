@@ -2,7 +2,7 @@
 // (design/agent-library/README.md, app/agent-library.css and .js).
 // Layout: Grace on one side; the chat on the other, with the input box pinned at the bottom.
 // Each step: the agent asks -> Grace's screen arrives as a card -> the learner picks -> the agent runs it and reveals.
-// State, scoring, log, feedback wording and save key are the same as app.js (index.html), so attempts are interchangeable.
+// State, scoring, log, feedback wording and save key are the same as app.js (review.html), so attempts are interchangeable.
 let s;
 try{s=JSON.parse(localStorage.getItem(SAVE));if(!s||s.v!==1)throw Error()}catch{s=fresh()}
 const newAgent=()=>({scene:s.started?4:0,flags:{},fix:Object.keys(s.mappings).length>0});
@@ -473,7 +473,7 @@ function respond(action,n,btn){
  case 'lesson':if(st!=='debrief')return;s.lesson=lessons[n];save();paint();break;
  case 'finish':if(st!=='debrief')return;s.completed=s.completed||new Date().toISOString();go('finish');closingVoice();break;
  case 'export':exportAttempt();break;
- case 'classic':s.page='finish';s.recapDone=true;save();location.href='index.html';break;
+ case 'classic':s.page='finish';s.recapDone=true;save();location.href='review.html';break;
  }
 }
 function sendRule(){

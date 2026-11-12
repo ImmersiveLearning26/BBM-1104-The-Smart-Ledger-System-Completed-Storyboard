@@ -1,10 +1,10 @@
-// Agent-led flow (app/agent.html): the opening through the six posting rules, built on the agent library.
+// Agent build (app/index.html): the opening through the six posting rules, built on the agent library.
 // Checks behaviour, scoring, the library's rules (no progress furniture, one feedback channel, layout never moves
 // while the agent works) and the 4 px grid at each step. Run with the same Playwright setup as browser.cjs.
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),path=require('node:path');
 const {audit}=require('./grid-audit.cjs');
 const app=path.resolve(process.argv[2]||path.join(__dirname,'../app'));
-const url='file://'+app+'/agent.html';
+const url='file://'+app+'/index.html';
 (async()=>{
 const b=await chromium.launch({headless:true,...(process.env.LEDGER_BROWSER?{executablePath:process.env.LEDGER_BROWSER}:{})});
 const faults=[],unvoiced=[];
@@ -196,7 +196,7 @@ assert.match(await p.locator('.msg.grace').textContent(),/Thank you for staying 
 g=await p.evaluate(()=>grade(s));assert(g.strands.every(v=>v>=0&&v<=100)&&g.final>0);
 const dl=p.waitForEvent('download');await doo('export');assert.match((await dl).suggestedFilename(),/^Smart-Ledger-.+\.json$/);
 // The same attempt opens in the detailed review
-await doo('classic');await p.waitForURL(/index\.html$/);assert.equal(await p.locator('h1').textContent(),'Month-end review complete');
+await doo('classic');await p.waitForURL(/review\.html$/);assert.equal(await p.locator('h1').textContent(),'Month-end review complete');
 await p.goto(url);assert.equal((await st(p)).page,'finish');
 await p.locator('[data-do=restart]').click();assert.equal((await st(p)).page,'finish','one tap only arms the restart');await p.locator('[data-do=restart]').click();
 assert.equal(await p.locator('h1').textContent(),'Month-endat Zuri.');assert.equal((await st(p)).maps,0);

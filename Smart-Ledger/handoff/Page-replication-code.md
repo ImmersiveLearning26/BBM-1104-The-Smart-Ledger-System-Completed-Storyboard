@@ -1,5 +1,5 @@
 # Page replication code
-These are the executable renderers and handlers from this build. The source paths are relative to **app/**. For an existing Claude project, use the index below to find the affected page and its companion shared files. For a fresh project, copy the complete app folder and use index.html as its entry point. Do not concatenate the snippets in document order; index.html defines the script load order.
+These are the executable renderers and handlers from this build. The source paths are relative to **app/**. For an existing Claude project, use the index below to find the affected page and its companion shared files. For a fresh project, copy the complete app folder. index.html is the agent build (agent.js, on the agent library). review.html is the earlier workspace build, and it defines the load order for the page modules below. Do not concatenate the snippets in document order.
 ## Source index
 | Page or state | Source | Reference images |
 |---|---|---|
@@ -460,7 +460,7 @@ Alternative presentation opened from app/agent.html: the opening through the six
 // (design/agent-library/README.md, app/agent-library.css and .js).
 // Layout: Grace on one side; the chat on the other, with the input box pinned at the bottom.
 // Each step: the agent asks -> Grace's screen arrives as a card -> the learner picks -> the agent runs it and reveals.
-// State, scoring, log, feedback wording and save key are the same as app.js (index.html), so attempts are interchangeable.
+// State, scoring, log, feedback wording and save key are the same as app.js (review.html), so attempts are interchangeable.
 let s;
 try{s=JSON.parse(localStorage.getItem(SAVE));if(!s||s.v!==1)throw Error()}catch{s=fresh()}
 const newAgent=()=>({scene:s.started?4:0,flags:{},fix:Object.keys(s.mappings).length>0});
@@ -931,7 +931,7 @@ function respond(action,n,btn){
  case 'lesson':if(st!=='debrief')return;s.lesson=lessons[n];save();paint();break;
  case 'finish':if(st!=='debrief')return;s.completed=s.completed||new Date().toISOString();go('finish');closingVoice();break;
  case 'export':exportAttempt();break;
- case 'classic':s.page='finish';s.recapDone=true;save();location.href='index.html';break;
+ case 'classic':s.page='finish';s.recapDone=true;save();location.href='review.html';break;
  }
 }
 function sendRule(){

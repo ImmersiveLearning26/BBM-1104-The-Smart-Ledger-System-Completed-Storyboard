@@ -5,7 +5,7 @@ const app=path.resolve(process.argv[2]||path.join(__dirname,'../app'));
 const b=await chromium.launch({headless:true,...(process.env.LEDGER_BROWSER?{executablePath:process.env.LEDGER_BROWSER}:{})});
 const faults=[];
 const st=p=>p.evaluate(()=>({v:voiceEl.src.split('/').pop(),vp:voiceEl.paused,a:ambienceEl.src.split('/').pop(),ap:ambienceEl.paused,cue:ui.cue,page:s.page}));
-const enter=async p=>{await p.goto('file://'+app+'/index.html');await p.evaluate(()=>localStorage.clear());await p.reload();await p.locator('[data-do=advanceSplash]').click();await p.locator('[data-do=enterCover]').click();await p.fill('#name','Alex');await p.locator('form button').click()};
+const enter=async p=>{await p.goto('file://'+app+'/review.html');await p.evaluate(()=>localStorage.clear());await p.reload();await p.locator('[data-do=advanceSplash]').click();await p.locator('[data-do=enterCover]').click();await p.fill('#name','Alex');await p.locator('form button').click()};
 // 1. normal intro
 let p=await b.newPage();p.on('pageerror',e=>faults.push('normal: '+e));
 const played=[];await p.exposeFunction('logPlay',x=>played.push(x));
@@ -39,7 +39,7 @@ p=await b.newPage();p.on('pageerror',e=>faults.push('blocked: '+e));await p.rout
 await enter(p);await p.waitForTimeout(800);assert.match(await p.locator('.caption').textContent(),/Welcome to Zuri/);
 await p.locator('[data-do=skip]').click();await p.locator('[data-do=start]').click();assert.equal(await p.evaluate(()=>s.page),'audit');await p.close();
 // 3. closing line on Finish
-p=await b.newPage();p.on('pageerror',e=>faults.push('finish: '+e));await p.goto('file://'+app+'/index.html');
+p=await b.newPage();p.on('pageerror',e=>faults.push('finish: '+e));await p.goto('file://'+app+'/review.html');
 await p.evaluate(()=>{const x=fresh();Object.assign(x,{mappings:Object.fromEntries(rules.map((r,i)=>[i,[r[1],r[2]]])),page:'debrief',recapDone:true,name:'Alex',posted:[0,1],repairs:['F1','F2','F3'],summary:0,marks:[true,true,true],rationale:['a','b','c']});x.report=cases.map((_,i)=>entry(x,i));localStorage.setItem(SAVE,JSON.stringify(x))});
 await p.reload();await p.locator('[data-do=finish]').click();await p.waitForTimeout(300);x=await st(p);assert.equal(x.v,'closing-grace.mp3');
 // old saves without the new media keys default to on
@@ -49,7 +49,7 @@ p=await b.newPage();p.on('pageerror',e=>faults.push('feedback: '+e));
 const plays=[];await p.exposeFunction('logPlay2',x=>plays.push(x));
 await p.addInitScript(()=>{const o=HTMLMediaElement.prototype.play;HTMLMediaElement.prototype.play=function(){window.logPlay2&&window.logPlay2(String(this.currentSrc||this.src).split('/').pop());return o.call(this)};
  window.__spoken=[];window.speechSynthesis&&(speechSynthesis.speak=u=>window.__spoken.push(u.text))});
-await p.goto('file://'+app+'/index.html');
+await p.goto('file://'+app+'/review.html');
 const seg=await p.evaluate(()=>[segmentLine('Check the debit account (asset). Hint: '+rules[0][3]),segmentLine('Saved. '+rules[5][3]),segmentLine('This sentence is not in the script.')]);
 assert.equal(seg[0].length,3,'debit check + Hint + rule');assert.equal(seg[1].length,2,'Saved + rule');assert.equal(seg[2],null,'unknown text is not voiced');
 // answer cues

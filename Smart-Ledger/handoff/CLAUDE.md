@@ -4,7 +4,7 @@ You are implementing **The Smart Ledger System** for BBM 1104. Use the supplied 
 
 ## What to open first
 1. Read START-HERE.md and source/Storyboard.pdf §§4–9. Where reference artwork contains illustrative account codes, figures or UI copy, use the fixed curriculum values in app/content.js.
-2. Run app/index.html. Match the screen states in design/screens/. design/direction/ contains earlier review mockups for selected states; design/inspiration/ explains their visual origins. Never mount a screenshot as the interactive application.
+2. Run app/index.html, the agent build. app/review.html is the earlier workspace build, and its states match design/screens/. design/direction/ contains earlier review mockups for selected states; design/inspiration/ explains their visual origins. Never mount a screenshot as the interactive application.
 3. Read design/Design-system.md, design/Screen-guide.md and handoff/Page-replication-code.md. Page modules are loaded by app/index.html. Reuse app/shared.js for controls and the persistent workspace. Make any edits in the executable source first.
 4. Implement events using app/app.js and calculations using app/engine.js. Preserve first attempts, correction order, revision history and all progression gates described in handoff/Scoring.md. Reuse the test fixtures in verification/. All navigation between learner activities uses one document.
 
@@ -36,7 +36,7 @@ Run the included accounting checks and browser walkthrough; also test a blocked 
 - Have a Kenyan-English speaker approve both voices.
 
 ## Agent-led build (primary)
-app/agent.html (agent.js, agent.css) is the primary build. It runs the whole simulation as a guided, agent-led chat:
+app/index.html (agent.js, agent.css) is the primary build. It runs the whole simulation as a guided, agent-led chat:
 - the opening and the review of the draft postings;
 - the posting rules;
 - the trial balance, then the difference (typed);
@@ -45,7 +45,7 @@ app/agent.html (agent.js, agent.css) is the primary build. It runs the whole sim
 - the written handover;
 - the debrief (score, corrected ledger, report, lesson) and Finish.
 
-index.html remains as the detailed review: it holds the decision log, reflection questions and facilitator marking, and opens on the same attempt. Extend the agent build; don't extend the older workspace style.
+review.html (the earlier workspace build) remains as the detailed review: it holds the decision log, reflection questions and facilitator marking, and opens on the same attempt. Extend the agent build; don't extend the older workspace style.
 
 It is built only from the agent library: design/agent-library/README.md, app/agent-library.css and app/agent-library.js. The live specimen is app/agent-library.html. Take every colour, size and component from there, and keep every length on the 4 px grid. `node verification/grid.cjs` and `node verification/agent.cjs` fail on anything off the grid.
 

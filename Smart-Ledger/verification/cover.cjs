@@ -10,7 +10,7 @@ const path=require('node:path');
   for(const mode of ['normal','reduced','unavailable']){
    const page=await browser.newPage({viewport:{width:mode==='reduced'?390:1366,height:mode==='reduced'?844:768},reducedMotion:mode==='reduced'?'reduce':'no-preference'});
    if(mode==='unavailable')await page.route(/product-loop\.(mp4|webm)$/,route=>route.abort());
-   await page.goto('file://'+app+'/index.html');
+   await page.goto('file://'+app+'/review.html');
    const start=page.locator('[data-do=enterCover]');await start.waitFor();
    assert(await start.evaluate(b=>b.getBoundingClientRect().bottom<=innerHeight));
    if(mode==='normal'){
