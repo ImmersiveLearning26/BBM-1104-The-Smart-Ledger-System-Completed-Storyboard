@@ -96,9 +96,12 @@ Every line height is a whole multiple of 4 px, so blocks of text always end on t
 |---|---|---|
 | `--r-pill` | 999 px | Input, chips and buttons in R1–R3 |
 | `--r-panel` | 32 px | R1 glass panel, R2 image card |
-| `--r-card` | 24 px | R2 info bar |
+| `--r-card` | 24 px | Pop-up, long-answer input |
+| `--r-bar` | 20 px | Header bar inside an object (32 − 12 px inset) |
 | `--r-tile` | 16 px | R1 tool tile (about 0.2 × its side), R2 black tile |
-| `--r-row` | 12 px | Rows inside objects |
+| `--r-row` | 16 px | Rows inside objects (32 − 16 px inset), and one-line summary cards |
+
+**Nested corners run parallel.** A corner inside another corner takes the outer radius minus the gap between them. A one-line summary card is a single solid surface with no frame, so it has no inner corner to mismatch.
 
 ### Size
 | Token | Value | Source |
@@ -119,9 +122,12 @@ Every line height is a whole multiple of 4 px, so blocks of text always end on t
 ### Motion
 | Token | Value |
 |---|---|
-| `--e-out` | cubic-bezier(.2,.8,.2,1) |
+| `--e-out` | cubic-bezier(.2,.8,.2,1) · presses and small changes |
+| `--e-settle` | cubic-bezier(.22,1,.36,1) · things arriving: a long, soft settle |
+| `--e-flow` | cubic-bezier(.65,0,.35,1) · things leaving: eases in and out |
 | Press | 160 ms |
-| Enter | 280 ms, rising 8 px and fading in |
+| Enter | 480 ms on `--e-settle`: rising 12 px out of a 6 px blur into focus |
+| Pop-up in / out | 480 ms in on `--e-settle` (from a 12 px blur, 94% scale, rising); 360 ms out on `--e-flow`, the same path in reverse |
 | Result pulse | 700 ms |
 | Glow orbit | 1.2 s per turn (FP) |
 
@@ -192,24 +198,27 @@ A horizontal ripple: three overlapping sine waves travelling left to right insid
 ### Result pop-up `.result`
 The only feedback surface.
 - A dark glass card (#463470 at 86% with blur, so it reads over any content), centred in the viewport and 360 px wide. A 56 px orb pulses green or red beside one or two sentences in white.
-- It leaves after 2.8 s, or on tap or Escape, and is announced to screen readers.
+- It leaves after 2.8 s (longer for longer messages), or on tap or Escape, and is announced to screen readers.
+- **Quick correct answers** (a balance placed in the right column, the right difference) pulse the orb green without a pop-up. Mistakes, corrections and milestones use the pop-up.
 - It never pushes content.
 - After a wrong answer, the composer keeps the learner's picks so they can change one tile.
 
 ### Ledger object `.obj` (R2)
 Grace's Smart Ledger screen: an `--obj-canvas` surface with a 32 px radius.
 - **Header:** an R2 info bar with a 36 px black tile showing a ledger glyph, the screen name, and one icon on the right.
-- **Rows:** `--obj-raised` fills with a 12 px radius and an 8 px gap, so there are no table rules. The current row is white with an orange dot.
+- **Rows:** `--obj-raised` fills with a 16 px radius and an 8 px gap, so there are no table rules. The current row is white with an orange dot.
 - **Amounts:** right-aligned, in tabular figures.
 
 ### T-account `.t` (inside objects)
 Two `--obj-raised` cells under a 4 px ink bar, with a 4 px ink gap between them. The T is accounting content, so it is the one place an ink line is allowed.
 
 ### Attention glow `.attn`
-The orb gradient, blurred into a halo behind **the one control waiting for the learner**. It turns once every 4 s and breathes every 2.4 s.
-- **What gets it:** the input box while it waits for a pick; the send button once both accounts are picked; the single next action (Begin, Continue, Fix the rules, Next rule).
+Marks **the one control waiting for the learner**, quietly.
+- **Dust:** orb particles (the orb gradient, 10–28 of them by size) drift round the control's edge, 3–10 px out, twinkling. They come from `AL.attend()`.
+- **Halo:** a faint breath of the same gradient behind it: 32% falling to 16% over 3.2 s, turning once every 6 s.
+- **What gets it:** the input box while it waits for a pick; the send button once its answer is ready; the single next action (Begin, Continue, Fix the rules, Next rule, Read the difference, Run all ten cases, Finish).
 - **What never gets it:** more than one control at a time, or anything that isn't actionable.
-- **Reduced motion:** the halo stays still.
+- **Reduced motion:** the dust and halo stay still.
 
 ### Icon bar `.iconbar` / `.ibtn`
 Settings and actions as 48 px glass icons (R3 circle buttons).
@@ -224,8 +233,12 @@ The character's side of the screen: the store video cropped on Grace, with a 32 
 The conversation, rebuilt from saved state so a reload restores it.
 - **Avatars:** Grace's photo for Grace, the learner's initial for the learner, a live orb on Smart Ledger's current message, and a still orb dot on its earlier messages.
 - **The current exchange** is full size, with Grace's screen posted beneath the question as a card.
-- **Earlier exchanges** step back: 16 px text at 85% white, and cards collapsed to a one-line `.obj.mini`. No counters.
+- **Earlier exchanges** step back: 16 px text at 85% white, and cards collapsed to a one-line `.obj.mini`, a single white surface with no frame. Finished stages collapse into one summary line each. No counters.
 - **The rule sheet**, when asked for, arrives as its own card under the current question, and leaves when asked again.
+
+### Typed answers
+- **Amount** (`.amountIn`): a numeric field in the pill, 20 px tabular figures, paired with tiles for the side.
+- **Long answer** (`.pill.long`, `.answerIn`): the pill grows into a 24 px-radius card holding a 96 px text area. Send is enabled only when the box isn't empty; Ctrl or Cmd+Enter sends.
 
 ### Dock `.dock`
 The input box pinned to the bottom of the chat, as in ChatGPT or Claude: context chips, then the composer, then the next action. What scrolls beneath it is blurred, and the blur fades out over 64 px, so there is no box edge.
@@ -302,7 +315,7 @@ Run it after every visual change.
 5. **Filled, not outlined.** Selection and emphasis are fills. Outlines appear only as the system focus ring.
 6. **One accent per screen.** Orange marks "this one". Green and red appear only on the orb and in the pop-up.
 7. **The agent speaks in two sentences at most.** Longer content belongs on the object.
-8. **Picks, not typing,** for anything that is marked.
+8. **Picks, not typing,** for anything that is marked. There are two exceptions: an amount the learner calculates (the trial balance difference) and the written handover. Both keep what was typed until the step changes.
 9. **Glass for the conversation, objects for the accounting.** Ledger data never sits directly on glass.
 10. **Reduced motion keeps every state,** showing it by colour without movement.
 11. **Use the space with content, not decoration.** The character fills one side and the conversation the other.

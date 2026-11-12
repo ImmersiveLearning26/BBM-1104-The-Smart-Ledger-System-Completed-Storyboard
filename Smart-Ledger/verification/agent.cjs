@@ -128,19 +128,77 @@ for(const [dr,cr] of [['Inventory','Trade Payables'],['Rent Expense','Bank'],['B
  assert.match(await setRule(p,dr,cr),/^Saved/);await p.locator('[data-do=nextRule]').click();
 }
 x=await st(p);assert.equal(x.maps,6);
-assert.match(await askText(p),/All six rules are saved/);
-assert.equal(await p.locator('#obj .row').count(),6);
-assert(await p.locator('.msg.past').count()>20,'the chat keeps its history');
-await onGrid(p,'end');
 // Scoring is the classic engine's: 5 of 6 rules right first time, audit approach wrong first time
-const g=await p.evaluate(()=>({pr:grade(s).strands[0],tries:s.log.filter(e=>e.task==='map').length,tasks:[...new Set(s.log.map(e=>e.task))]}));
+let g=await p.evaluate(()=>({pr:grade(s).strands[0],tries:s.log.filter(e=>e.task==='map').length,tasks:[...new Set(s.log.map(e=>e.task))]}));
 assert.equal(Math.round(g.pr*100)/100,83.33);assert.equal(g.tries,8);assert.deepEqual(g.tasks,['flag','audit','map','hint']);
-// Hand-off: the same attempt continues in the classic build at the June ledger
-await p.locator('[data-do=handoff]').click();await p.waitForURL(/index\.html$/);
-assert.equal(await p.locator('h1').textContent(),'Extract the trial balance');
-assert.equal(await p.evaluate(()=>Object.keys(s.mappings).length),6);
-await p.goto(url);assert.match(await askText(p),/All six rules are saved/);
-await p.locator('[data-do=restart]').click();assert.equal((await st(p)).maps,6,'one tap only arms the restart');await p.locator('[data-do=restart]').click();
+const doo=(a,v)=>p.locator('[data-do='+a+']'+(v===undefined?'':'[data-val="'+v+'"]')).first().click();
+// ---- Trial balance: finished chapters collapse to one line each ----
+assert.equal((await st(p)).page,'sort');
+assert.match(await p.locator('.msg.grace').textContent(),/will not let me close the month/);
+assert.deepEqual(await p.locator('.msg.past .obj.mini').allTextContents(),['Draft postingsThree differ from the rules','Posting rulesSix saved']);
+assert.match(await askText(p),/^Cash has a balance of KSh 70,500\. Which column/);
+assert.equal(await p.locator('[data-do=book]').count(),1,'the ledger book is on hand');
+await doo('book');assert.match(await p.locator('.bookMsg').textContent(),/Ledger book.*Trade Payables/);await doo('book');
+await onGrid(p,'trial balance');
+const sides=await p.evaluate(()=>ledger(s).map(v=>v>0?0:1));
+await doo('column',1-sides[0]);assert.match(await result(p),/^Check the normal balance for Cash \(asset\)\./);
+for(let i=0;i<11;i++)await doo('column',sides[i]);
+assert.match(await askText(p),/Every balance is placed/);assert.equal(await p.locator('[data-do=readDifference].attn').count(),1);
+await doo('readDifference');
+// ---- Difference: a typed calculation plus the short side ----
+await p.fill('#amount','14,100');await doo('side',1);
+assert.equal(await p.inputValue('#amount'),'14,100','picking a side keeps the typed amount');
+await doo('send');assert.match(await result(p),/^Subtract the smaller total/);
+await doo('side',0);await doo('send');
+// ---- Trace and classify ----
+assert.equal((await st(p)).page,'trace');assert.match(await askText(p),/Open each one/);
+for(const i of [0,1,2])await doo('evidence',i);
+assert.match(await p.locator('#obj').textContent(),/Supplier payment from bank/);
+await doo('type',2);assert.match(await result(p),/^Compare the source amount/);
+await doo('type',0);assert.match(await result(p),/Trade Payables is missing its KSh 15,000 debit/);
+await doo('type',1);assert.match(await result(p),/divides by nine/);
+await onGrid(p,'trace');await doo('correction');
+// ---- Corrections: the payoff is the corrected trial balance ----
+await doo('post',1);assert.match(await result(p),/^Preview: suspense would be/);
+await doo('post',0);assert.match(await result(p),/^Posted\. Suspense balance: Credit KSh 900\./);
+await doo('post',1);assert.match(await result(p),/^Posted\. Suspense balance: Nil\./);
+assert.match(await askText(p),/Suspense is clear, and both columns agree/);
+assert.match(await p.locator('#obj').textContent(),/Corrected June trial balance.*Total\s*465,000\s*465,000/);
+await onGrid(p,'corrected trial balance');
+await doo('console');
+// ---- Tests: pick, predict, run, repair ----
+assert.match(await p.locator('.msg.grace').textContent(),/How do I know the system will not make the same mistakes/);
+assert.equal(await p.locator('[data-do=regression]').count(),0,'all ten cannot run before every kind is covered');
+const predict=async i=>{await doo('case',i);const [d,c]=await p.evaluate(i=>[accounts[cases[i][2]],accounts[cases[i][3]]],i);return setRule(p,d,c)};
+assert.match(await predict(0),/The system posted correctly/);assert.match(await predict(3),/The system posted correctly/);
+assert.match(await predict(7),/unequal amounts/);assert.match(await p.locator('#obj').textContent(),/Missing entry ⚠/);
+await onGrid(p,'failing test');
+await doo('repair',3);assert.match(await result(p),/^That change would leave/);
+await doo('repair',0);assert.match(await result(p),/^Routine revised/);
+await predict(8);await doo('repair',1);await result(p);
+assert.match(await predict(9),/The totals agree\. Check which account received the debit\./);await doo('repair',2);await result(p);
+assert.equal(await p.locator('[data-do=regression].attn').count(),1,'all ten unlocks once every kind is covered');
+await doo('regression');await doo('runAll');assert.equal(await result(p),'All ten cases pass. Confirm the report to unlock handover.');
+assert.equal(await p.locator('#obj .row').count(),10);await doo('confirmReport');
+// ---- Handover: a summary, then three written answers ----
+assert.match(await p.locator('.msg.grace').textContent(),/can I trust everything in the books/);
+await doo('summary',1);assert.match(await result(p),/^Recall T10/);await doo('summary',0);assert.equal(await result(p),'Explain the reasoning in your own words.');
+assert.equal(await p.locator('#send').isDisabled(),true,'an empty answer cannot be sent');
+for(const a of ['Assets, expenses and drawings increase with a debit; liabilities, income and capital increase with a credit.','I compared both ledger legs with source transactions, posted corrections through suspense and cleared the difference.','A wrong account can still leave equal totals, as T10 showed.']){await p.fill('#answer',a);await doo('send')}
+// ---- Debrief: score, corrected ledger, report, lesson ----
+x=await p.evaluate(()=>({page:s.page,marks:s.marks,recap:s.recapDone}));assert.deepEqual(x,{page:'debrief',marks:[true,true,true],recap:true});
+assert.match(await askText(p),/Here is your month-end review/);
+assert.match(await p.locator('.thread').textContent(),/Weighted score.*Corrected June ledger.*Regression report/);
+await onGrid(p,'debrief');
+await doo('lesson',1);assert.equal(await p.evaluate(()=>s.lesson),'Trace a difference before clearing it');
+await doo('finish');assert.equal((await st(p)).page,'finish');assert(await p.evaluate(()=>!!s.completed));
+assert.match(await p.locator('.msg.grace').textContent(),/Thank you for staying with the numbers/);
+g=await p.evaluate(()=>grade(s));assert(g.strands.every(v=>v>=0&&v<=100)&&g.final>0);
+const dl=p.waitForEvent('download');await doo('export');assert.match((await dl).suggestedFilename(),/^Smart-Ledger-.+\.json$/);
+// The same attempt opens in the detailed review
+await doo('classic');await p.waitForURL(/index\.html$/);assert.equal(await p.locator('h1').textContent(),'Month-end review complete');
+await p.goto(url);assert.equal((await st(p)).page,'finish');
+await p.locator('[data-do=restart]').click();assert.equal((await st(p)).page,'finish','one tap only arms the restart');await p.locator('[data-do=restart]').click();
 assert.equal(await p.locator('h1').textContent(),'Month-endat Zuri.');assert.equal((await st(p)).maps,0);
 await p.close();
 
@@ -154,6 +212,11 @@ const order=await p.evaluate(()=>['portrait','thread','reply'].map(id=>document.
 assert(order[0]<order[1]&&order[1]<order[2],'Grace, the chat, then the input box');
 for(const el of await p.locator('#reply button:visible').all())assert((await el.boundingBox()).height>=44,'touch targets');
 await onGrid(p,'phone rule picker');
+// Later stages on the phone, from a saved attempt part-way through
+await p.evaluate(()=>{const x=JSON.parse(localStorage.getItem(SAVE));rules.forEach((r,i)=>x.mappings[i]=[r[1],r[2]]);x.page='sort';localStorage.setItem(SAVE,JSON.stringify(x))});
+await p.reload();assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth),390);await onGrid(p,'phone trial balance');
+await p.evaluate(()=>{const x=JSON.parse(localStorage.getItem(SAVE));const v=ledger(x);v.forEach((n,j)=>x.columns[j]=n>0?'Debit':'Credit');Object.assign(x,{difference:true,inspected:[0,1,2],types:{0:0,1:1},posted:[0,1],page:'test',selected:7});x.runs={7:{pred:[5,1],actual:entry(x,7),initial:entry(x,7)}};localStorage.setItem(SAVE,JSON.stringify(x))});
+await p.reload();assert.match(await p.locator('#obj').textContent(),/Missing entry/);await onGrid(p,'phone failing test');
 await p.close();
 
 // 3. Reduced motion: no video autoplay, runs are instant
@@ -173,5 +236,5 @@ assert.match(await setRule(p,'Cash','Capital'),/^Saved/);assert.equal((await st(
 await p.close();
 
 assert.deepEqual(faults,[]);assert.deepEqual(unvoiced,[],'every feedback line is in production/voice-lines.json');
-console.log('PASS: agent chat on the library — portrait, chat history, pinned input, attention glow, icon settings, rule sheet card, opening, her screen in scene, name gate, hidden expected postings, no progress furniture, audit retry, run before reveal, comparison, picker, swapped/hint/saved via the pop-up, glow + building orb + wave with no layout shift, T-account, reload, keyboard, six rules, classic scoring, hand-off, restart, 390px, reduced motion, blocked media, 4 px grid at every step.');
+console.log('PASS: whole simulation as an agent chat — trial balance, typed difference, trace, corrections to a corrected ledger, tests and repairs, regression, written handover, debrief, finish, export, classic review; portrait, chat history, pinned input, attention glow, icon settings, rule sheet card, opening, her screen in scene, name gate, hidden expected postings, no progress furniture, audit retry, run before reveal, comparison, picker, swapped/hint/saved via the pop-up, glow + building orb + wave with no layout shift, T-account, reload, keyboard, six rules, classic scoring, hand-off, restart, 390px, reduced motion, blocked media, 4 px grid at every step.');
 await b.close();})().catch(e=>{console.error(e);process.exit(1)});

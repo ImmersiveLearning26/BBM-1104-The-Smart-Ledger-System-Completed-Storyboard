@@ -39,6 +39,33 @@
 .dock .tiles:not(.two):not(.list) .tile{flex-direction:row;align-items:center;justify-content:flex-start;gap:8px;min-height:48px;padding:8px 12px}
 .msg.cur .obj{animation:enter .28s var(--e-out) both}
 
+/* Trial balance and test results: label plus right-aligned amount columns */
+.tbHead{display:grid;grid-template-columns:minmax(0,1fr) 112px 112px;gap:12px;padding:0 16px;font:500 12px/16px Manrope,sans-serif;color:var(--ink-2)}
+.tbHead span+span{text-align:right}
+.row.tb{display:grid;grid-template-columns:minmax(0,1fr) 112px 112px;gap:12px}
+.row.tb .num{text-align:right;font-variant-numeric:tabular-nums}
+.row.tb.total{background:var(--obj-fill)}
+/* In column rows the current-row dot sits in the padding, not in a column. */
+.row.tb,.row.tb3{position:relative}
+.row.tb.now::before,.row.tb3.now::before{position:absolute;left:4px;top:50%;margin-top:-4px}
+.row.tb3{display:grid;grid-template-columns:72px minmax(0,1fr) minmax(0,1fr);gap:12px;font-size:14px}
+.row.verdict{background:#fff}
+.objBody .gap{height:16px}
+/* Tiles with a second line (test cases, flagged accounts) */
+.tile span small{display:block;font:500 12px/16px Manrope,sans-serif;color:inherit;opacity:.72}
+.tiles.cases{grid-template-columns:1fr 1fr}
+.tiles.cases .tile,.dock .tiles.list .tile{flex-direction:row;align-items:center;justify-content:flex-start;gap:12px;min-height:56px}
+/* Long option sets stay compact so the card above them stays in view. */
+.dock .tiles.cases .tile{min-height:48px;padding:8px 12px}
+/* Typed answers: the calculated difference, and the written handover */
+.amountIn{flex:1;min-width:0;height:44px;border:0;background:none;color:var(--on-input);font:600 20px/28px Manrope,sans-serif;font-variant-numeric:tabular-nums}
+.answerIn{flex:1;min-width:0;height:96px;padding:8px 0;border:0;background:none;resize:none;color:var(--on-input);font:400 16px/24px Manrope,sans-serif}
+.amountIn::placeholder,.answerIn::placeholder{color:var(--on-input-2);font-weight:400}
+.amountIn:focus,.answerIn:focus{outline:none}
+.pill.long{height:auto;min-height:64px;align-items:flex-end;padding:12px 8px 8px 16px;border-radius:var(--r-card)}
+.pill.long .compose{height:auto;align-items:stretch}
+.pill.long>[data-orb]{align-self:flex-start;margin-top:12px}
+
 /* Rows that carry a second line (rule sheet, comparison) */
 .row .eg{display:block;color:var(--ink-2);font:500 13px/20px Manrope,sans-serif}
 .row b{font-weight:600}
@@ -60,6 +87,9 @@
  .room{padding-top:16px}
  .room .portrait{height:200px}
  .dock::before{left:calc(-1 * var(--margin))}
+ .tiles.cases{grid-template-columns:1fr}
+ .tbHead,.row.tb{grid-template-columns:minmax(0,1fr) 88px 88px;gap:8px}
+ .row.tb3{grid-template-columns:56px minmax(0,1fr) minmax(0,1fr);gap:8px}
  .portrait video{object-position:85% 30%}
  .portrait .top,.portrait .who{left:16px;right:16px}.portrait .top{top:16px}.portrait .who{bottom:16px}
 }

@@ -138,7 +138,7 @@ function result(text,tone='pass',ms=2800){
 function close(instant){
  if(!open)return;const {el,done,timer}=open;open=null;clearTimeout(timer);
  if(instant||reduced()){el.remove();done();return}
- el.classList.add('out');setTimeout(()=>{el.remove();done()},200);
+ el.classList.add('out');setTimeout(()=>{el.remove();done()},360);
 }
 addEventListener('keydown',e=>{if(e.key==='Escape')close()});
 
@@ -148,6 +148,41 @@ function flash(btn,text,ms=1600){
  btn.classList.add('open');clearTimeout(btn.flashT);btn.flashT=setTimeout(()=>{btn.classList.remove('open');if(btn.dataset.label)lab.textContent=btn.dataset.label},ms);
 }
 const iconButton=({act,icon:i,label,on=null})=>'<button type="button" class="ibtn'+(on?' on':'')+'" data-do="'+act+'" data-label="'+label+'"'+(on===null?'':' aria-pressed="'+on+'"')+' aria-label="'+label+'"><span class="ibi">'+icon(i)+'</span><span class="ibl" aria-hidden="true">'+label+'</span></button>';
+
+// ---- Attention dust: orb particles drifting round the edge of the one control waiting for the learner ----
+const dusts=new Set();let draf=0,dlast=0;
+class Dust{
+ constructor(host){
+  this.host=host;this.c=document.createElement('canvas');this.c.className='attnDust';this.c.setAttribute('aria-hidden','true');host.append(this.c);
+  this.ctx=this.c.getContext('2d');this.t=0;this.fit();
+  const n=Math.max(10,Math.min(28,Math.round(this.len/16)));
+  this.p=Array.from({length:n},(_,i)=>({d:i/n,v:.018+Math.random()*.02,o:3+Math.random()*7,s:.7+Math.random()*1.1,ph:Math.random()*6.28}));
+  dusts.add(this);if(reduced())this.draw();else dloop();
+ }
+ fit(){const d=Math.min(2,devicePixelRatio||1),r=this.c.getBoundingClientRect();this.w=r.width;this.h=r.height;this.c.width=Math.round(this.w*d);this.c.height=Math.round(this.h*d);this.ctx.setTransform(d,0,0,d,0,0);
+  const bw=this.w-24,bh=this.h-24,rad=Math.min(bh/2,parseFloat(getComputedStyle(this.host).borderTopLeftRadius)||0);this.box=[bw,bh,rad];this.len=2*(bw+bh)-8*rad+2*Math.PI*rad}
+ // A point on the rounded-rectangle edge, distance f (0..1) round it, pushed out by off px.
+ at(f,off){
+  const [w,h,r]=this.box,straight=[w-2*r,h-2*r],arc=Math.PI*r/2;let d=(f%1+1)%1*this.len;
+  const segs=[['line',straight[0],[r,0],[1,0],[0,-1]],['arc',arc,[w-r,r],-Math.PI/2],['line',straight[1],[w,r],[0,1],[1,0]],['arc',arc,[w-r,h-r],0],['line',straight[0],[w-r,h],[-1,0],[0,1]],['arc',arc,[r,h-r],Math.PI/2],['line',straight[1],[0,h-r],[0,-1],[-1,0]],['arc',arc,[r,r],Math.PI]];
+  for(const sg of segs){if(d>sg[1]&&sg!==segs[7]){d-=sg[1];continue}
+   if(sg[0]==='line'){const [,,p0,dir,n]=sg;return [12+p0[0]+dir[0]*d+n[0]*off,12+p0[1]+dir[1]*d+n[1]*off]}
+   const [,,c0,a0]=sg,a=a0+(r?d/r:0);return [12+c0[0]+Math.cos(a)*(r+off),12+c0[1]+Math.sin(a)*(r+off)]}
+  return [12,12];
+ }
+ step(dt){this.t+=dt;for(const q of this.p)q.d+=q.v*dt;this.draw()}
+ draw(){
+  const {ctx}=this;ctx.clearRect(0,0,this.w,this.h);
+  for(const q of this.p){const [x,y]=this.at(q.d,q.o*(.75+.25*Math.sin(this.t*1.3+q.ph))),tw=.35+.35*Math.sin(this.t*2+q.ph);
+   const col=grad(Math.sin(q.d*6.283));ctx.fillStyle=`rgba(${col},${Math.max(.08,tw)})`;ctx.beginPath();ctx.arc(x,y,q.s,0,6.283);ctx.fill()}
+ }
+}
+function dloop(){if(draf)return;dlast=performance.now();const tick=now=>{const dt=Math.min(.05,(now-dlast)/1000);dlast=now;for(const d of dusts){if(!d.host.isConnected||!d.host.classList.contains('attn')){d.c.remove();dusts.delete(d);continue}d.step(dt)}draf=dusts.size&&!reduced()?requestAnimationFrame(tick):0};draf=requestAnimationFrame(tick)}
+// Give every visible .attn element its dust, and clear it from elements that no longer need attention.
+function attend(root=document){
+ root.querySelectorAll('.attnDust').forEach(c=>{if(!c.parentElement.classList.contains('attn')){c.remove();for(const d of dusts)if(d.c===c)dusts.delete(d)}});
+ root.querySelectorAll('.attn').forEach(el=>{if(!el.querySelector(':scope>.attnDust')&&el.getClientRects().length)new Dust(el)});
+}
 
 // Mount every [data-orb] and [data-wave] inside a root.
 function mount(root=document){
@@ -168,5 +203,5 @@ function grid(on=!overlay){
 addEventListener('keydown',e=>{if(e.altKey&&e.shiftKey&&e.code==='KeyG'){e.preventDefault();grid()}});
 if(new URLSearchParams(location.search).has('grid'))addEventListener('DOMContentLoaded',()=>grid(true));
 addEventListener('resize',()=>{waves.forEach(w=>{w.fit();w.draw()});drawGrid()});
-return {Orb,Wave,result,close,icon,accountIcons,mount,grid,flash,iconButton};
+return {Orb,Wave,result,close,icon,accountIcons,mount,grid,flash,iconButton,attend};
 })();

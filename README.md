@@ -17,7 +17,7 @@ Then open **http://localhost:8000/agent.html**, the agent-led build. `Smart-Ledg
 - **The learner picks an answer** in the input box.
 - **The agent runs it**, with a waveform and glow while it works, then reveals the result in a single pop-up.
 
-It covers the opening through the six posting rules. The same attempt then continues at the June ledger in `index.html`, which uses the earlier workspace style until it is converted. Scoring, saving and audio are shared.
+It runs the whole simulation, from the opening to the debrief, which ends on the corrected June ledger. `index.html` opens the same attempt as a detailed review, with the decision log, reflection and facilitator marking. Scoring, saving and audio are shared.
 
 Every visual comes from the agent design library, on a 4 px grid:
 - `Smart-Ledger/design/agent-library/` holds the rules and the three references.

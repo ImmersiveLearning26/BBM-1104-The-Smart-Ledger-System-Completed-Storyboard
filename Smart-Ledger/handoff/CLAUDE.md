@@ -36,7 +36,16 @@ Run the included accounting checks and browser walkthrough; also test a blocked 
 - Have a Kenyan-English speaker approve both voices.
 
 ## Agent-led build (primary)
-app/agent.html (agent.js, agent.css) is the primary build. It presents the opening through the six posting rules as a guided, agent-led flow, then hands the same attempt to index.html at the June ledger. Convert the remaining stages to this style, using the same library and grid; don't extend the older workspace style.
+app/agent.html (agent.js, agent.css) is the primary build. It runs the whole simulation as a guided, agent-led chat:
+- the opening and the review of the draft postings;
+- the posting rules;
+- the trial balance, then the difference (typed);
+- error tracing and corrections, ending on the corrected trial balance;
+- tests and repairs, then the full ten-case run;
+- the written handover;
+- the debrief (score, corrected ledger, report, lesson) and Finish.
+
+index.html remains as the detailed review: it holds the decision log, reflection questions and facilitator marking, and opens on the same attempt. Extend the agent build; don't extend the older workspace style.
 
 It is built only from the agent library: design/agent-library/README.md, app/agent-library.css and app/agent-library.js. The live specimen is app/agent-library.html. Take every colour, size and component from there, and keep every length on the 4 px grid. `node verification/grid.cjs` and `node verification/agent.cjs` fail on anything off the grid.
 
@@ -45,6 +54,7 @@ It is built only from the agent library: design/agent-library/README.md, app/age
 - **No progress furniture:** no step dots, counters or running tallies, and no logo. The orb is the agent.
 - **The learner does the thinking.** The agent never supplies an answer, and the expected posting stays hidden until the learner has chosen the rule-by-rule comparison.
 - **Scripted, not a live model.** All prompts and feedback are fixed text, so scoring is consistent and the app runs offline.
-- **Same engine.** State, scoring, log, save key and feedback wording are those of app.js, so an attempt continues in index.html from the June ledger.
+- **Same engine.** State, scoring, log, save key and feedback wording are those of app.js, so either build can open the same attempt.
+- **Chapters:** finished stages collapse into one summary line each. Reference cards (the rule sheet, the ledger book) open in the chat from chips above the input box.
 - **One unscored addition:** a "Looks right / Looks wrong" call on each draft posting (log task `flag`, `s.agent.flags`), compared with the rule sheet in the reveal.
-- **Not yet converted:** trial balance, difference, error tracing, corrections, tests, handover and debrief. The agent's own prompts are on-screen text only; they are not in production/voice-lines.json yet.
+- **Still open:** the agent's own questions are on-screen text only; they are not in production/voice-lines.json yet. Feedback lines and Grace's briefings are voiced as before.
