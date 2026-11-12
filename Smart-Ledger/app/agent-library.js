@@ -28,7 +28,12 @@ const paths={
  drawings:'<path d="M4 8h13a3 3 0 0 1 3 3v6H4zM4 8l10-4 2 4M16 13h1"/>',
  sales:'<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.3"/>',
  rent:'<path d="M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/>',
- delivery:'<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/>'
+ delivery:'<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/>',
+ check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+ cross:'<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
+ heading:'<path d="M5 5h14M12 5v14M8 19h8"/>',
+ compare:'<rect x="3" y="5" width="7" height="14" rx="1.5"/><rect x="14" y="5" width="7" height="14" rx="1.5"/><path d="M10 12h4"/>',
+ hide:'<path d="M3 12s3.5-6 9-6c2 0 3.7.8 5 1.8M21 12s-3.5 6-9 6c-2 0-3.7-.8-5-1.8M4 4l16 16"/>'
 };
 const icon=(n,cls='')=>'<svg class="ic '+cls+'" viewBox="0 0 24 24" aria-hidden="true">'+paths[n]+'</svg>';
 // Curriculum order (content.js accounts), so the tile layout gives nothing away.

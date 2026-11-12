@@ -170,6 +170,10 @@ The agentic input box, built in three layers:
 
 Answers are always **picked**, never typed. Typing is used only for the learner's name and the written handover.
 
+- **One-pick steps** (a right/wrong call, a choice of approach) answer as soon as a tile is tapped. The send button is hidden.
+- **Two-pick steps** (debit and credit) fill the tokens, then the send button runs them.
+- **The reveal comes after the run:** the result, and any change to Grace's screen, appears only once the agent has finished working.
+
 ### Option tile `.tile` (R1 tool tiles)
 A `--glass-tile` tile, 64 px high, radius 16, holding an icon and a label. Hover uses glass-1. The grid has four columns on laptop and three on phone. Accounts appear in curriculum order, unsorted and ungrouped, so the layout gives nothing away.
 - **Selected:** filled white at 80%, ink text, and one orange dot in the corner (the R2 accent). Which side it went to is shown by the token in the pill.

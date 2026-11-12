@@ -1,18 +1,19 @@
-// Agent-led flow (prototype): the opening through the six posting rules.
-// Every step has four beats: situation -> evidence on Grace's screen -> the learner's call -> Smart Ledger runs it and reveals.
+// Agent-led flow: the opening through the six posting rules, built only from the agent library
+// (design/agent-library/README.md, app/agent-library.css and .js).
+// Each step: situation -> evidence on Grace's screen -> the learner's pick -> Smart Ledger runs it and reveals.
 // State, scoring, log and save key are the same as app.js, so an attempt can continue in index.html.
 let s;
 try{s=JSON.parse(localStorage.getItem(SAVE));if(!s||s.v!==1)throw Error()}catch{s=fresh()}
 const newAgent=()=>({scene:s.started?4:0,flags:{},fix:Object.keys(s.mappings).length>0});
 s.agent=s.agent||newAgent();
-let ui={msg:'',tone:'',pick:[null,null],slot:0,run:null,saved:null,failedStorage:false};
-let runTimer,opener,keys={};
+let ui={pick:[null,null],slot:0,busy:false,saved:null,approach:null,failedStorage:false};
+let runTimer,opener,lastStep='';
 const root=document.querySelector('#app');
 const byId=id=>document.getElementById(id);
 const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
 const supportedSpeech=()=>typeof speechSynthesis!=='undefined'&&typeof SpeechSynthesisUtterance!=='undefined';
-const details=(title,body)=>'<details><summary>'+title+'</summary><div>'+body+'</div></details>';
 const count=()=>Object.keys(s.mappings).length;
+const ic=AL.icon;
 // Feedback and hints: same rules as app.js, so the voice script covers both views.
 function say(line){
  const k=segmentLine(line);if(!k)console.debug('[unvoiced]',line);
@@ -35,6 +36,8 @@ const findings={'S-02':'Sides reversed','S-03':'Customer debt remains open. Sale
 const sampleWrong=i=>{const a=samples[i],r=rules[a[5]];return a[3]!==r[1]||a[4]!==r[2]};
 const nextSample=()=>samples.findIndex((_,j)=>!s.seen.includes(j));
 const testAmount=i=>(samples.find(a=>a[5]===i)||[])[2]??cases.find(c=>c[5]===i)[1];
+const sheetRows=[['Assets','Cash, Bank, Inventory, Equipment, Trade Receivables','Debit'],['Expenses','Rent, Delivery','Debit'],['Drawings','Owner withdrawals','Debit'],['Liabilities','Trade Payables','Credit'],['Capital','Owner investment','Credit'],['Income','Sales','Credit']];
+const approachIcons=['heading','compare','hide'];
 const flowPages=['splash','cover','identity','intro','title','audit','action','mapping'];
 function stage(){
  if(!flowPages.includes(s.page))return 'end';
@@ -45,128 +48,136 @@ function stage(){
  return 'end';
 }
 
-// ---- Building blocks ----
-const mark='<svg viewBox="0 0 25 26" aria-hidden="true"><path fill="#8890ff" d="M1 6 11 1v20L1 26z"/><path fill="#505adc" d="M14 4 24 0v20l-10 5z"/></svg>';
-const gear=(cls='')=>'<button type="button" class="utility '+cls+'" data-do="settings" title="Audio" aria-label="Audio settings">'+icon('settings')+'</button>';
-const win=(title,body)=>'<section class="win" aria-label="Smart Ledger: '+title+'"><header><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="winBrand">'+mark+'Smart Ledger</span><span class="winTitle">'+title+'</span></header><div class="winBody">'+body+'</div></section>';
-const tEntry=(d,c,amount)=>'<div class="tEntry"><div><small>Debit</small><b>'+d+'</b>'+(amount?'<span>'+money(amount)+'</span>':'')+'</div><div><small>Credit</small><b>'+c+'</b>'+(amount?'<span>'+money(amount)+'</span>':'')+'</div></div>';
-const speakers={grace:['Grace','<span class="av grace" aria-hidden="true"></span>'],agent:['Smart Ledger','<span class="av" aria-hidden="true">'+mark+'</span>']};
-const msgLine=(who,html)=>'<div class="msg">'+speakers[who][1]+'<div><b>'+speakers[who][0]+'</b><p>'+html+'</p></div></div>';
-const story=line=>'<figure class="story"><blockquote><cite>Grace Achieng · Owner</cite>'+line+'</blockquote></figure>';
-const note=()=>ui.msg?'<p class="note '+ui.tone+'" id="note" role="status" tabindex="-1">'+escapeHTML(ui.msg)+'</p>':'';
-const runList=()=>ui.run?'<ol class="runSteps" role="status">'+ui.run.steps.slice(0,ui.run.i+1).map((t,j)=>'<li class="'+(j<ui.run.i?'done':'now')+'">'+escapeHTML(t)+'</li>').join('')+'</ol>':'';
-const go=(label,action='next',off=false)=>'<button type="button" class="primary" data-do="'+action+'" '+(off?'disabled':'')+'>'+label+'</button>';
+// ---- Library pieces ----
+const objBar=(title,sub='June ledger')=>'<div class="objBar"><span class="appTile">'+ic('ledger')+'</span><div><b>'+title+'</b><small>'+sub+'</small></div>'+ic('globe','end')+'</div>';
+const obj=(title,body,sub)=>objBar(title,sub)+'<div class="objBody">'+body+'</div>';
+const tAccount=(d,c,amount)=>'<div class="t"><div><small>Debit</small><b>'+d+'</b>'+(amount?'<span>'+money(amount)+'</span>':'')+'</div><div><small>Credit</small><b>'+c+'</b>'+(amount?'<span>'+money(amount)+'</span>':'')+'</div></div>';
+const row=(label,right,cls='')=>'<li class="row '+cls+'"><span>'+label+'</span><small>'+right+'</small></li>';
+const sheet=()=>'<ul class="rows">'+sheetRows.map(([k,eg,side])=>'<li class="row"><span><b>'+k+'</b><small class="eg">'+eg+'</small></span><small>'+side+'</small></li>').join('')+'</ul><p class="objLabel sheetNote">Each posting has equal debits and credits.</p>';
+const tile=(label,icon,val,on=false,act='pick')=>'<button type="button" class="tile'+(on?' on':'')+'" data-do="'+act+'" data-val="'+val+'" '+(ui.busy?'disabled':'')+'>'+ic(icon)+'<span>'+label+'</span>'+(on?'<i class="dot" aria-hidden="true"></i>':'')+'</button>';
 
-// ---- Opening: who Grace is, what she is facing, the screen she is facing it on ----
+// ---- Opening: Grace, then her problem on her own screen, then the learner's role ----
 function sceneBody(){
- const n=s.agent.scene;
- if(n===0)return '<p class="over">BBM 1104 · Principles of Accounting</p><h1 tabindex="-1">Month-end<br>at Zuri.</h1>'+go('Begin →','begin');
- if(n===1)return '<div class="cap" tabindex="-1"><b>Zuri Home Supplies · Nairobi</b><p>'+intro[0][1]+'</p></div>'+go('Continue →');
- if(n===2)return win('June month-end','<ul class="checks"><li><span>Trial balance</span><b>Does not balance</b></li><li><span>Suspense account</span><b>Open</b></li><li><span>Month-end close</span><b>Blocked</b></li></ul>')+'<div class="cap" tabindex="-1"><b>Grace Achieng · Owner</b><p>“'+intro[1][1]+'”</p></div>'+go('Continue →');
- return '<div class="cap" tabindex="-1"><b>Your role</b><p>'+intro[2][1]+'</p></div><form id="join"><label>Your name<input required maxlength="60" id="name" autocomplete="given-name" placeholder="Enter your name"></label><button class="primary">Join Grace →</button></form><small class="fine">Speed is not scored. All figures are fictional.</small>';
+ const n=s.agent.scene,next=(label,act='next')=>'<button type="button" class="btn-raised" data-do="'+act+'">'+label+'</button>';
+ if(n===0)return '<p class="t-caption over">BBM 1104 · Principles of Accounting</p><h1 class="t-display" tabindex="-1">Month-end<br>at Zuri.</h1>'+next('Begin','begin');
+ if(n===1)return '<div class="cap" tabindex="-1"><p class="t-caption">Zuri Home Supplies · Nairobi</p><p class="t-message">'+intro[0][1]+'</p></div>'+next('Continue');
+ if(n===2)return '<div class="obj win">'+obj('June month-end','<ul class="rows">'+row('Trial balance','Does not balance')+row('Suspense account','Open')+row('Month-end close','Blocked')+'</ul>','Smart Ledger')+'</div><div class="cap" tabindex="-1"><p class="t-caption">Grace Achieng · Owner</p><p class="t-message">“'+intro[1][1]+'”</p></div>'+next('Continue');
+ return '<div class="cap" tabindex="-1"><p class="t-caption">Your role</p><p class="t-message">'+intro[2][1]+'</p></div><form id="join" class="pill"><span data-orb></span><label class="sr" for="name">Your name</label><input id="name" required maxlength="60" autocomplete="given-name" placeholder="Your name"><button class="send" type="submit" aria-label="Join Grace"><span>'+ic('arrow','arrow')+'</span></button></form><p class="t-caption fine">Speed is not scored. All figures are fictional.</p>';
 }
 
-// ---- Workspace: the story and the learner's call on the left, Grace's screen on the right ----
-function trail(){
- const st=stage(),items=[];
- if(st!=='review'){const f=Object.values(s.agent.flags).filter(Boolean).length;items.push('Draft postings <b>5 reviewed · '+f+' flagged</b>')}
- if(st==='rules'||st==='end')items.push('Checked against the rule sheet <b>3 differ</b>');
- if(st==='end')items.push('Posting rules <b>6 saved</b>');
- return items.length?'<ol>'+items.map(t=>'<li>'+t+'</li>').join('')+'</ol>':'';
-}
-function talk(){
+// ---- Workspace: talk (left), Grace's screen (right), the composer (left, below) ----
+function ask(){
  const st=stage();
- if(st==='review')return '<h1 class="sr">'+stepTitles.audit+'</h1>'+story('“'+briefings[0][0]+'”')+msgLine('agent','I posted these five. Does each one look right to you?');
- if(st==='approach'){
-  if(!s.compared||ui.run)return '<h1 class="sr">'+stepTitles.action+'</h1>'+msgLine('agent','Before I change anything, how should I check them?')+runList()+note();
-  const hit=samples.filter((_,i)=>sampleWrong(i)&&s.agent.flags[i]).length;
-  return '<h1 class="sr">Posting comparison</h1>'+msgLine('agent','I compared each posting with its rule.')+note()+(Object.keys(s.agent.flags).length===5?'<p class="aside">You flagged '+hit+' of the 3.</p>':'');
- }
- if(st==='rules'){
-  const i=ui.saved??count(),r=rules[i];
-  return '<h1 class="sr">'+stepTitles.mapping+'</h1>'+msgLine('agent','<small>Rule '+(i+1)+' of 6</small><strong>'+r[0]+'.</strong> Which account do I debit, and which do I credit?')+runList()+note();
- }
- return '<h1 class="sr">Rules complete</h1>'+msgLine('agent','All six rules are saved. New postings will follow them.')+'<div class="endCard"><b>The prototype ends here.</b><p>The June ledger, the tests and the handover continue in the current build, with your progress and score carried over.</p></div>';
-}
-function rulesTable(){
- const cur=ui.saved===null&&count()<6?count():-1;
- const rows=rules.map((r,i)=>s.mappings[i]&&!(ui.run&&ui.saved===i)?'<tr><th scope="row">'+r[0]+'</th><td>'+accounts[s.mappings[i][0]]+'</td><td>'+accounts[s.mappings[i][1]]+'</td></tr>':i===cur||(ui.run&&ui.saved===i)?'<tr class="cur"><th scope="row">'+r[0]+'</th>'+ui.pick.map(p=>'<td>'+(p===null?'—':accounts[p])+'</td>').join('')+'</tr>':'').join('');
- const left=6-count()-(cur===-1?0:1);
- return '<table class="rulesT"><thead><tr><th scope="col">When this happens</th><th scope="col">Debit</th><th scope="col">Credit</th></tr></thead><tbody>'+rows+'</tbody></table>'+(left>0?'<p class="more">'+left+' more to set</p>':'');
+ if(st==='review')return 'Does this posting look right to you?';
+ if(st==='approach')return s.compared?'I compared each posting with its rule.':'Before I change anything, how should I check them?';
+ if(st==='rules'){const r=rules[ui.saved??count()];return '<b>'+r[0]+'.</b> Which account do I debit, and which do I credit?'}
+ return 'All six rules are saved. The June ledger is next.';
 }
 function screenView(){
  const st=stage();
  if(st==='review'){
   const i=nextSample(),a=samples[i];
-  return win('Draft postings','<ol class="pips" aria-label="Posting '+(i+1)+' of 5">'+samples.map((_,j)=>'<li class="'+(s.seen.includes(j)?'done':j===i?'now':'')+'"></li>').join('')+'</ol><small>'+a[0]+' · '+(i+1)+' of 5</small><h2>'+sampleLabels[i]+'</h2><div class="amount">'+cash(a[2])+'</div>'+(i===2?'<p class="hintLine">Payment for an earlier credit sale.</p>':'')+tEntry(accounts[a[3]],accounts[a[4]]));
+  return obj('Draft postings','<p class="objLabel">'+a[0]+(i===2?' · Payment for an earlier credit sale':'')+'</p><p class="objTitle">'+sampleLabels[i]+'</p><p class="objAmount">'+cash(a[2])+'</p>'+tAccount(accounts[a[3]],accounts[a[4]]));
  }
  if(st==='approach'){
-  if(!s.compared||ui.run)return win('Rule sheet',ruleSheet());
-  return win('Posting comparison','<ul class="cmp">'+samples.map((a,i)=>{
-   const bad=sampleWrong(i),r=rules[a[5]],flagged=s.agent.flags[i],has=i in s.agent.flags;
-   const call=!has?'':bad?(flagged?'<span class="call hit">You flagged it</span>':'<span class="call miss">You passed it</span>'):(flagged?'<span class="call miss">You flagged it</span>':'');
-   return '<li class="'+(bad?'bad':'')+'"><small>'+a[0]+'</small><b>'+sampleLabels[i]+'</b>'+(bad?call:'<span class="call fine">Matches</span>'+call)+(bad?'<div class="detail"><span>Posted <s>'+accounts[a[3]]+' / '+accounts[a[4]]+'</s></span><span>Rule sheet <strong>'+accounts[r[1]]+' / '+accounts[r[2]]+'</strong></span><em>'+findings[a[0]]+'</em></div>':'')+'</li>'}).join('')+'</ul>');
+  if(!s.compared)return obj('Rule sheet',sheet());
+  return obj('Posting comparison','<ul class="rows">'+samples.map((a,i)=>{
+   const call=i in s.agent.flags?'You said '+(s.agent.flags[i]?'wrong':'right'):'';
+   if(!sampleWrong(i))return row('<b>'+a[0]+'</b> '+sampleLabels[i],'Matches'+(call?' · '+call:''));
+   const r=rules[a[5]];
+   return '<li class="row open"><span><b>'+a[0]+'</b> '+sampleLabels[i]+'</span><small>'+call+'</small><p class="was">Posted <s>'+accounts[a[3]]+' / '+accounts[a[4]]+'</s></p><p class="is">Rule sheet <b>'+accounts[r[1]]+' / '+accounts[r[2]]+'</b></p><p class="why">'+findings[a[0]]+'</p></li>'}).join('')+'</ul>');
  }
- const done=ui.saved!==null&&!ui.run?ui.saved:-1;
- const test=done>-1?'<div class="testPost"><small>Test posting · '+rules[done][0]+' · '+cash(testAmount(done))+'</small>'+tEntry(accounts[s.mappings[done][0]],accounts[s.mappings[done][1]],testAmount(done))+'<span class="positive">Balanced · matches the rule sheet</span></div>':'';
- return win('Posting rules',rulesTable()+test+(st==='rules'?details('Rule sheet',ruleSheet()):''));
+ const cur=st==='rules'&&ui.saved===null?count():-1;
+ const rows=rules.map((r,i)=>s.mappings[i]&&ui.saved!==i?row(r[0],accounts[s.mappings[i][0]]+' · '+accounts[s.mappings[i][1]]):i===cur||ui.saved===i?row(r[0],ui.saved===i?accounts[s.mappings[i][0]]+' · '+accounts[s.mappings[i][1]]:(ui.pick[0]===null?'Debit ?':accounts[ui.pick[0]])+' · '+(ui.pick[1]===null?'Credit ?':accounts[ui.pick[1]]),'now'):'').join('');
+ const test=ui.saved!==null?'<div class="objOk enter"><p class="objLabel">Test posting · '+cash(testAmount(ui.saved))+'</p>'+tAccount(accounts[s.mappings[ui.saved][0]],accounts[s.mappings[ui.saved][1]],testAmount(ui.saved))+'</div>':'';
+ return obj('Posting rules','<ul class="rows">'+rows+'</ul>'+test);
 }
-function reply(){
- const st=stage(),busy=!!ui.run;
- if(st==='review')return '<div class="two">'+choice('flag','Looks right',0)+choice('flag','Looks wrong',1)+'</div>';
- if(st==='approach')return s.compared&&!busy?go('Fix the rules →','fix'):'<div class="opts">'+auditOptions.map((x,i)=>choice('approach',escapeHTML(x),i,busy)).join('')+'</div>';
- if(st==='rules'){
-  if(ui.saved!==null&&!busy)return go(count()===6?'Finish the rules →':'Next rule →','nextRule');
-  return '<div class="slots">'+[0,1].map(k=>'<button type="button" class="slot'+(ui.slot===k?' on':'')+(ui.pick[k]===null?'':' filled')+'" data-do="slot" data-val="'+k+'" aria-pressed="'+(ui.slot===k)+'" '+(busy?'disabled':'')+'><small>'+['Debit','Credit'][k]+'</small><b>'+(ui.pick[k]===null?'Choose':accounts[ui.pick[k]])+'</b></button>').join('')+'</div><div class="chips" role="group" aria-label="Accounts">'+accounts.map((a,j)=>'<button type="button" class="chip'+(ui.pick.includes(j)?' used':'')+'" data-do="acct" data-val="'+j+'" '+(busy?'disabled':'')+'>'+a+'</button>').join('')+'</div>'+go('Run it →','run',busy||ui.pick.includes(null));
- }
- return go('Continue in the current build →','handoff')+choice('restart','Start again');
+function compose(){
+ const st=stage();
+ if(st==='review')return '<span class="placeholder">Looks right or looks wrong?</span>';
+ if(st==='approach')return ui.approach===null?'<span class="placeholder">Choose how I should check</span>':'<span class="token on"><b>'+auditOptions[ui.approach]+'</b></span>';
+ if(ui.pick.every(v=>v===null)&&ui.slot===0)return '<span class="placeholder">Pick the debit account</span>';
+ return ['Debit','Credit'].map((x,k)=>'<button type="button" class="token'+(ui.slot===k?' on':'')+(ui.pick[k]===null?' empty':'')+'" data-do="slot" data-val="'+k+'" aria-pressed="'+(ui.slot===k)+'" '+(ui.busy?'disabled':'')+'><small>'+x+'</small><b>'+(ui.pick[k]===null?'—':accounts[ui.pick[k]])+'</b></button>').join('');
+}
+function tileOptions(){
+ const st=stage();
+ if(st==='review')return '<div class="tiles two" role="group" aria-label="Your call">'+tile('Looks right','check',0,false,'flag')+tile('Looks wrong','cross',1,false,'flag')+'</div>';
+ if(st==='approach')return '<div class="tiles list" role="group" aria-label="How to check">'+auditOptions.map((x,i)=>tile(escapeHTML(x),approachIcons[i],i,ui.approach===i,'approach')).join('')+'</div>';
+ return '<div class="tiles" role="group" aria-label="Accounts">'+accounts.map((a,j)=>tile(a,AL.accountIcons[j],j,ui.pick.includes(j),'acct')).join('')+'</div>';
+}
+function after(){
+ const st=stage();
+ if(st==='approach'&&s.compared)return '<button type="button" class="btn-ink" data-do="fix">Fix the rules</button>';
+ if(st==='rules'&&ui.saved!==null)return '<button type="button" class="btn-ink" data-do="nextRule">'+(count()===6?'Finish the rules':'Next rule')+'</button>';
+ if(st==='end')return '<button type="button" class="btn-ink" data-do="handoff">Open the June ledger</button><button type="button" class="btn-glass" data-do="restart">Start again</button>';
+ return '';
 }
 
-// ---- Rendering: a fixed shell per mode, so the opening video never restarts ----
+// ---- Shells: fixed skeletons, so the orb and waveform keep running between steps ----
 function shell(mode){
- root.dataset.mode=mode;keys={};
+ root.dataset.mode=mode;lastStep='';
  root.innerHTML=(mode==='open'
-  ?'<main class="scene"><video class="sceneBg" muted loop playsinline preload="auto" poster="assets/video/zuri-store-poster.webp" aria-hidden="true"><source src="assets/video/zuri-store-loop.mp4" type="video/mp4"></video><header class="sceneTop"><img src="assets/brand/miva-open-university.svg" alt="MIVA Open University" width="120" height="37">'+gear('ghost')+'</header><div class="sceneBody" id="sceneBody"></div></main>'
-  :'<header class="bar">'+brand()+'<div class="prog" role="img" aria-label="Stage 1 of 4: Posting rules"><b>Posting rules</b><i class="on"></i><i></i><i></i><i></i></div>'+gear()+'</header><main class="flow"><div id="trail"></div><div id="talk"></div><div id="screen"></div><div id="reply"></div></main>')
-  +'<dialog id="dialog"></dialog>';
+  ?'<main class="scene"><video class="sceneBg" muted loop playsinline preload="auto" poster="assets/video/zuri-store-poster.webp" aria-hidden="true"><source src="assets/video/zuri-store-loop.mp4" type="video/mp4"></video><header class="sceneTop wrap"><img src="assets/brand/miva-open-university.svg" alt="MIVA Open University" width="116" height="36"><button class="icon-glass" type="button" data-do="settings" aria-label="Audio settings">'+ic('settings')+'</button></header><div class="wrap grid12"><div class="sceneBody col-1-5" id="sceneBody"></div></div></main>'
+  :'<div class="atm"><header class="hdr"><p class="t-title">Zuri Home Supplies</p><p class="t-caption dim">June month-end</p><button class="icon-glass" type="button" data-do="settings" aria-label="Audio settings">'+ic('settings')+'</button></header>'
+   +'<main class="wrap grid12 flow"><section class="col-1-5 flowA" id="talk"><div id="story"></div><div class="line"><span class="av" data-orb id="agentOrb"></span><p class="t-message" id="ask" tabindex="-1"></p></div></section>'
+   +'<section class="col-7-12 flowObj" id="screen" aria-label="Grace\'s Smart Ledger screen"><div class="obj" id="obj"></div></section>'
+   +'<section class="col-1-5 flowC" id="reply"><div class="chips"><button class="chip" type="button" data-do="sheet">'+ic('sheet')+'Rule sheet</button></div><div class="composer" id="composer"><div class="pill"><span data-orb id="pillOrb"></span><div class="compose" id="compose"></div><canvas class="wave" data-wave="gradient" id="pillWave"></canvas><button class="send" type="button" id="send" data-do="send" aria-label="Run it"><span>'+ic('arrow','arrow')+'<i class="stop"></i></span></button></div><div id="opts"></div></div><div class="after" id="after"></div></section></main></div>')
+  +'<dialog id="dialog" class="sheetDialog"></dialog>';
  if(mode==='open'&&!reduced())root.querySelector('.sceneBg').play().catch(()=>{});
+ AL.mount(root);
 }
-// Replace a region; animate it only when its content is a new step, not a small update.
-function fill(id,html,key){const el=byId(id);if(!el)return;el.classList.toggle('fresh',keys[id]!==key);keys[id]=key;el.innerHTML=html}
-function paint(focus){
+function paint(focusSel){
  const st=stage(),mode=st==='open'?'open':'work';
  if(root.dataset.mode!==mode)shell(mode);
- if(mode==='open'){fill('sceneBody',sceneBody(),s.agent.scene);if(focus!==false)root.querySelector('#sceneBody [tabindex]')?.focus({preventScroll:true})}
- else{
-  const step=st+':'+(st==='review'?nextSample():st==='rules'?(ui.saved??count()):s.compared&&!ui.run);
-  fill('trail',trail(),st);fill('talk',talk(),step);fill('screen',screenView(),step+(ui.saved!==null&&!ui.run));fill('reply',reply(),step+(ui.saved!==null&&!ui.run));
-  if(focus)root.querySelector(focus)?.focus({preventScroll:true});else if(focus!==false){const el=byId('note')||root.querySelector('#talk h1');el?.focus({preventScroll:true});(byId('note')||byId('talk')).scrollIntoView({block:'nearest',behavior:reduced()?'auto':'smooth'})}
+ if(mode==='open'){
+  const body=byId('sceneBody');body.innerHTML=sceneBody();body.classList.remove('enter');void body.offsetWidth;body.classList.add('enter');AL.mount(body);
+  if(focusSel!==false)body.querySelector('[tabindex],#name')?.focus({preventScroll:true});
+ }else{
+  const step=st+':'+(st==='review'?nextSample():st==='rules'?(ui.saved??count())+':'+(ui.saved!==null):s.compared);
+  const fresh=step!==lastStep;lastStep=step;
+  byId('story').innerHTML=st==='review'?'<div class="story"><p>“'+briefings[0][0]+'”</p><button class="icon-glass" type="button" data-do="replay" aria-label="Play Grace\'s line">'+ic('play')+'</button></div>':'';
+  byId('ask').innerHTML=ask();
+  byId('obj').innerHTML=screenView();
+  const done=(st==='approach'&&s.compared)||(st==='rules'&&ui.saved!==null)||st==='end';
+  byId('composer').hidden=done;root.querySelector('#reply .chips').hidden=done;
+  byId('compose').innerHTML=compose();byId('opts').innerHTML=tileOptions();byId('after').innerHTML=after();
+  const send=byId('send');send.hidden=st!=='rules';send.disabled=ui.busy||ui.pick.includes(null);
+  if(fresh)for(const id of ['talk','obj','reply']){const el=byId(id);el.classList.remove('enter');void el.offsetWidth;el.classList.add('enter')}
+  if(focusSel)root.querySelector(focusSel)?.focus({preventScroll:true});
+  else if(fresh&&focusSel!==false)byId('ask').focus({preventScroll:true});
  }
  if(ui.failedStorage&&!byId('storageAlert'))root.insertAdjacentHTML('beforeend','<p role="alert" id="storageAlert">This browser could not save progress. Keep this tab open.</p>');
 }
-// A pick changes only Grace's screen and the reply, so the conversation does not flicker.
-function paintPick(focus){fill('screen',screenView(),keys.screen);fill('reply',reply(),keys.reply);root.querySelector(focus)?.focus({preventScroll:true})}
-function tell(line,tone){ui.msg=line;ui.tone=tone;save();paint();say(line)}
-// "Smart Ledger takes it back and runs it": a short visible run, then the reveal. Instant with reduced motion.
-function runAgent(steps,done){
- if(reduced()){done();return}
- ui.run={steps,i:0};ui.msg='';paint(false);
- const tick=()=>{ui.run.i++;if(ui.run.i>=steps.length){ui.run=null;done();return}paint(false);runTimer=setTimeout(tick,380)};
- runTimer=setTimeout(tick,380);
+// The agent's two orbs share its state.
+const orbs=()=>[byId('agentOrb')?.orb,byId('pillOrb')?.orb].filter(Boolean);
+function working(on,mode='working'){
+ ui.busy=on;byId('composer')?.classList.toggle('working',on);byId('send')?.classList.toggle('running',on);
+ const w=byId('pillWave')?.wave;if(w){if(on)w.fit();w.set(on)}
+ orbs().forEach(o=>o.set(on?mode:'idle'));
 }
+// Feedback: orb pulse plus the centred pop-up (README: one feedback channel).
+function tell(line,tone){
+ orbs().forEach(o=>o.set(tone));save();say(line);
+ AL.result(line,tone,Math.max(2800,line.split(' ').length*320));
+}
+// Smart Ledger takes the learner's pick and runs it. Instant with reduced motion.
+function run(mode,done){if(reduced()){done();return}working(true,mode);paint(false);runTimer=setTimeout(()=>{working(false);done()},1400)}
 function modal(title,body){
  opener=document.activeElement;const d=byId('dialog');
- d.innerHTML='<div class="dialogHead"><h2 id="dialogTitle">'+title+'</h2>'+choice('close','Close')+'</div>'+body;d.setAttribute('aria-labelledby','dialogTitle');d.showModal();
+ d.innerHTML='<div class="sheetHead"><h2 class="t-title" id="dialogTitle">'+title+'</h2><button type="button" class="icon-glass" data-do="close" aria-label="Close">'+ic('cross')+'</button></div>'+body;d.setAttribute('aria-labelledby','dialogTitle');d.showModal();
  d.addEventListener('close',()=>opener?.focus(),{once:true});
 }
-const settingsText=()=>'<label class="toggle"><input type="checkbox" id="recorded" '+(recordedOn()?'checked':'')+'>Play recorded voices for Grace and the narrator</label><label class="toggle"><input type="checkbox" id="ambience" '+(soundsOn()?'checked':'')+'>Play sounds: shop ambience and answer cues</label><label class="toggle"><input type="checkbox" id="voice" '+(s.media.voice?'checked':'')+(supportedSpeech()?'':' disabled')+'>Read feedback and hints aloud</label><hr>'+choice('restart','Start again');
+const toggle=(id,on,label,off=false)=>'<label class="toggle"><input type="checkbox" id="'+id+'" '+(on?'checked':'')+(off?' disabled':'')+'><span>'+label+'</span></label>';
+const settingsText=()=>toggle('recorded',recordedOn(),'Play recorded voices for Grace and the narrator')+toggle('ambience',soundsOn(),'Play sounds: shop ambience and answer cues')+toggle('voice',s.media.voice,'Read feedback and hints aloud',!supportedSpeech())+'<button type="button" class="btn-glass" data-do="restart">Start again</button>';
 
 function respond(action,n){
- if(ui.run&&!['settings','close'].includes(action))return;
+ if(ui.busy&&!['settings','close','sheet'].includes(action))return;
  const st=stage();
  switch(action){
  case 'settings':modal('Audio',settingsText());break;
+ case 'sheet':s.sheet=true;save();modal('Rule sheet','<div class="obj">'+obj('Rule sheet',sheet(),'Account types')+'</div>');break;
  case 'close':byId('dialog').close();break;
+ case 'replay':playVoice([voiceClips.brief[0][0]],briefings[0][0]);break;
  case 'begin':if(st!=='open'||s.agent.scene!==0)return;s.agent.scene=1;save();paint();introVoice(0);introSounds(0);break;
  case 'next':if(st!=='open'||s.agent.scene<1||s.agent.scene>2)return;s.agent.scene++;save();paint();introVoice(s.agent.scene-1);introSounds(s.agent.scene-1);break;
  case 'flag':{
@@ -178,35 +189,37 @@ function respond(action,n){
  case 'approach':{
   if(st!=='approach'||s.compared)return;
   if(s.firstAudit===null)s.firstAudit=n;record(s,'audit',0,auditOptions[n],n===1);
-  if(n!==1){tell('Changing headings or hiding accounts leaves the original postings unchecked. Try again.','warn');break}
-  s.compared=true;save();
-  runAgent(['Reading the rule sheet','Comparing five postings with their rules'],()=>tell('Three draft postings differ from the rules.','ok'));break;
+  if(n!==1){ui.approach=null;paint(false);tell('Changing headings or hiding accounts leaves the original postings unchecked. Try again.','fail');break}
+  ui.approach=n;save();
+  // The comparison is revealed only once Smart Ledger has finished running it.
+  run('working',()=>{s.compared=true;ui.approach=null;paint();tell('Three draft postings differ from the rules.','pass')});break;
  }
- case 'fix':if(st!=='approach'||!s.compared)return;s.agent.fix=true;s.page='mapping';ui.msg='';save();paint();break;
- case 'slot':if(st!=='rules'||ui.saved!==null)return;ui.slot=n;paintPick('[data-do=slot][data-val="'+n+'"]');break;
+ case 'fix':if(st!=='approach'||!s.compared)return;s.agent.fix=true;s.page='mapping';save();paint();break;
+ case 'slot':if(st!=='rules'||ui.saved!==null)return;ui.slot=n;paint('[data-do=slot][data-val="'+n+'"]');break;
  case 'acct':{
   if(st!=='rules'||ui.saved!==null)return;
-  ui.pick[ui.slot]=n;const first=ui.slot===0&&ui.pick[1]===null;if(first)ui.slot=1;
-  paintPick(ui.pick.includes(null)?'[data-do=acct][data-val="'+n+'"]':'[data-do=run]');break;
+  const other=1-ui.slot;if(ui.pick[other]===n)ui.pick[other]=null;   // one account cannot sit on both sides
+  ui.pick[ui.slot]=n;if(ui.slot===0&&ui.pick[1]===null)ui.slot=1;
+  paint(ui.pick.includes(null)?'[data-do=acct][data-val="'+n+'"]':'#send');break;
  }
- case 'run':{
+ case 'send':{
   const i=count();if(st!=='rules'||ui.saved!==null||i>=6||ui.pick.includes(null))return;
   const p=ui.pick.slice(),r=rules[i],ok=p[0]===r[1]&&p[1]===r[2];record(s,'map',i,p.map(j=>accounts[j]),ok);
   let feedback='Saved. '+r[3];
-  if(ok){s.mappings[i]=p;ui.saved=i}
-  else{
+  if(!ok){
    const swapped=p[0]===r[2]&&p[1]===r[1];
    feedback=swapped?'Sides swapped. Check which balance increases and which falls.':i===5&&kinds[p[0]]==='expense'?'Owner withdrawals are drawings. A personal withdrawal is separate from a business expense.':'Check the '+(p[0]!==r[1]?'debit account ('+kinds[r[1]]+')':'credit account ('+kinds[r[2]]+')')+'.';
    if(s.log.filter(e=>e.task==='map'&&e.item===i).length>=2){feedback+=' Hint: '+r[3];record(s,'hint',i,'Second rule attempt',true)}
    ui.slot=swapped||p[0]!==r[1]?0:1;
   }
   save();
-  runAgent(['Test posting · '+r[0],'Debit '+accounts[p[0]],'Credit '+accounts[p[1]],'Checking the rule sheet'],()=>tell(feedback,ok?'ok':'warn'));break;
+  // The rule is saved when Smart Ledger finishes its test posting, so the question never jumps ahead mid-run.
+  run('building',()=>{if(ok){s.mappings[i]=p;ui.saved=i;save()}paint(false);tell(feedback,ok?'pass':'fail');if(ok)byId('after').querySelector('button')?.focus({preventScroll:true})});break;
  }
- case 'nextRule':if(ui.saved===null)return;ui.saved=null;ui.pick=[null,null];ui.slot=0;ui.msg='';paint();break;
+ case 'nextRule':if(ui.saved===null)return;ui.saved=null;ui.pick=[null,null];ui.slot=0;paint();break;
  case 'handoff':if(st!=='end')return;if(flowPages.includes(s.page))s.page='sort';save();location.href='index.html';break;
- case 'restart':modal('Start a new attempt?','<p>This replaces the saved attempt on this device.</p>'+go('Start new attempt','reset'));break;
- case 'reset':clearTimeout(runTimer);stopVoice();stopShopSound();s=fresh();s.agent=newAgent();ui={...ui,msg:'',tone:'',pick:[null,null],slot:0,run:null,saved:null};save();root.dataset.mode='';paint();break;
+ case 'restart':modal('Start a new attempt?','<p class="t-body">This replaces the saved attempt on this device.</p><button type="button" class="btn-ink" data-do="reset">Start new attempt</button>');break;
+ case 'reset':clearTimeout(runTimer);AL.close(true);stopVoice();stopShopSound();s=fresh();s.agent=newAgent();ui={...ui,pick:[null,null],slot:0,busy:false,saved:null,approach:null};save();root.dataset.mode='';paint();break;
  }
 }
 root.addEventListener('click',e=>{const b=e.target.closest('button[data-do]');if(b&&!b.disabled)respond(b.dataset.do,Number(b.dataset.val))});

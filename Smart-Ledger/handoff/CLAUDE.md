@@ -38,7 +38,10 @@ Run the included accounting checks and browser walkthrough; also test a blocked 
 ## Agent-led flow (prototype, branch agentic-flow)
 app/agent.html (agent.js, agent.css) presents the opening through the six posting rules as a guided flow. index.html is unchanged and remains the complete build.
 
-- **Each step has four beats:** the situation in one line; the evidence on Grace's screen (one Smart Ledger window showing only what matters now); the learner's call (one structured input); then Smart Ledger runs it and reveals the result.
+It is built only from the agent library: design/agent-library/README.md, app/agent-library.css and app/agent-library.js. The live specimen is app/agent-library.html. Take every colour, size and component from there, and keep every length on the 4 px grid. `node verification/grid.cjs` and `node verification/agent.cjs` fail on anything off the grid.
+
+- **Each step has four beats:** the agent's question, shown as one line beside the orb; the evidence on Grace's screen, as a single solid object; the learner's pick, made in the input box; and the run, shown by the waveform, the send glow and the orb, with the reveal arriving through the centre pop-up.
+- **No progress furniture:** no step dots, counters or running tallies, and no logo. The orb is the agent.
 - **The learner does the thinking.** The agent never supplies an answer, and the expected posting stays hidden until the learner has chosen the rule-by-rule comparison.
 - **Scripted, not a live model.** All prompts and feedback are fixed text, so scoring is consistent and the app runs offline.
 - **Same engine.** State, scoring, log, save key and feedback wording are those of app.js, so an attempt continues in index.html from the June ledger.

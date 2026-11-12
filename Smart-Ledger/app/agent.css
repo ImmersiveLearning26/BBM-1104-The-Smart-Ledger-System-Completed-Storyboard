@@ -1,98 +1,65 @@
-/* Agent-led flow (prototype). Loads after style.css and reuses its tokens, buttons, tables and dialog. */
-.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-@keyframes spin{to{transform:rotate(360deg)}}
-.fresh>*,.note,.runSteps li.now{animation:rise .26s ease-out both}
+/* Agent-led flow: layout only. Every visual comes from agent-library.css (design/agent-library/README.md).
+   All lengths are on the 4 px grid; verification/grid.cjs checks this page. */
 
-/* Opening: Grace first, then her problem, then the screen she is facing it on */
-.scene{position:relative;isolation:isolate;overflow:hidden;min-height:100svh;display:flex;flex-direction:column;padding:22px clamp(18px,5vw,64px) 40px;color:#fff;background:#1d2a25 url('assets/video/zuri-store-poster.webp') 72% center/cover}
+/* ---- Opening scene: Grace on the store video ---- */
+.scene{position:relative;isolation:isolate;overflow:hidden;min-height:100svh;color:#fff;background:#1d2a25 url('assets/video/zuri-store-poster.webp') 72% center/cover}
 .sceneBg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:72% center;z-index:-2}
-.scene::before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,#0d1514ee 0%,#0d1514b8 32%,#0d151400 62%)}
-.sceneTop{display:flex;justify-content:space-between;align-items:center}
-.sceneTop img{height:36px;width:auto}
-.sceneBody{margin:auto 0;width:min(100%,440px);display:grid;gap:18px;justify-items:start;padding:28px 0}
-.scene h1{font-size:clamp(46px,6.2vw,86px);margin:0}.scene h1:focus,.cap:focus,#talk h1:focus{outline:none}
-.over{font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0;opacity:.85}
-.cap{font-size:19px;line-height:1.45}.cap p{margin:0}
-.cap b{display:block;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;opacity:.8;margin-bottom:6px}
-.scene .primary{background:#fff;color:var(--ink);border-color:#fff}
-.scene .primary:hover:not(:disabled){background:#e4e7f1}
-.scene .ghost{background:#182322b5;border:1px solid #9aafa4;color:#fff}
-.scene .ghost:hover:not(:disabled){background:#2b3b38}
-.scene :is(button,input):focus-visible{outline-color:#fff}
-#join{display:grid;gap:12px;width:min(100%,320px)}#join label{margin:0;color:#fff}
-.fine{color:#d6ddd9}
-.scene .win{color:var(--ink)}
+.scene::before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,#0d1514f0 0%,#0d1514c0 34%,#0d151400 64%)}
+.sceneTop{display:flex;align-items:center;justify-content:space-between;height:80px}
+.sceneTop img{display:block;height:36px;width:auto}
+.sceneBody{display:grid;justify-items:start;gap:24px;padding:184px 0 64px}
+.sceneBody .over{text-transform:uppercase;letter-spacing:.08em;color:var(--on-glass-2)}
+.cap{display:grid;gap:8px}.cap:focus,.sceneBody h1:focus,#ask:focus{outline:none}
+.cap .t-caption{text-transform:uppercase;letter-spacing:.08em;color:var(--on-glass-2)}
+.scene .obj.win{width:100%}
+.scene .fine{color:var(--on-glass-2)}
+#join{width:100%}
+#join input{flex:1;min-width:0;height:44px;border:0;background:none;color:var(--on-input);font:400 16px/24px Manrope,sans-serif}
+#join input::placeholder{color:var(--on-input-2)}
+#join input:focus{outline:none}
+#join:focus-within{box-shadow:0 0 0 2px #fff}
 
-/* Grace's screen: one Smart Ledger window that shows only what matters now */
-.win{width:100%;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 22px 48px -28px #1b214099;overflow:hidden}
-.win>header{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line);background:#fafbfe;font-size:13px}
-.dots{display:flex;gap:5px}.dots i{width:9px;height:9px;border-radius:50%;background:#d5d9e4}
-.winBrand{display:inline-flex;align-items:center;gap:6px;font:700 16px Afacad,Arial,sans-serif;letter-spacing:-.03em;white-space:nowrap}.winBrand svg{width:14px;height:15px}
-.winTitle{margin-left:auto;color:var(--muted);white-space:nowrap}
-.winBody{padding:18px 20px 20px}.winBody h2{margin:2px 0 0}.winBody .amount{margin:4px 0 6px}.winBody .tablewrap{margin-top:0}.winBody details{margin-top:14px}
-.hintLine{color:var(--muted);margin:0}
-.checks{list-style:none;margin:0;padding:0}.checks li{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}.checks li:last-child{border:0;padding-bottom:0}.checks li:first-child{padding-top:0}
-.checks b{color:#7a4818}.checks b::before{content:'⚠ '}
-.pips{display:flex;gap:6px;list-style:none;margin:0 0 16px;padding:0}.pips li{flex:1;height:4px;border-radius:2px;background:var(--line)}.pips li.done{background:#a1a8d9}.pips li.now{background:var(--indigo)}
-/* A posting drawn as a T-account */
-.tEntry{display:grid;grid-template-columns:1fr 1fr;border-top:2px solid var(--ink);margin-top:14px}
-.tEntry>div{display:grid;gap:2px;padding:12px 14px 4px}.tEntry>div+div{border-left:2px solid var(--ink)}
-.tEntry b{font-size:17px;font-weight:600}.tEntry span{color:var(--muted);font-variant-numeric:tabular-nums}
-.testPost{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}.testPost .tEntry{margin:10px 0 14px}
-.cmp{list-style:none;margin:0;padding:0;display:grid;gap:8px}
-.cmp li{display:grid;grid-template-columns:auto 1fr auto;gap:6px 10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px}
-.cmp li.bad{background:#fffaf1;border-color:#f0d6a6}.cmp b{font-weight:600}
-.cmp .detail{grid-column:1/-1;display:grid;gap:3px;font-size:14px;color:var(--muted)}.cmp .detail strong{color:var(--ink);font-weight:600}.cmp .detail em{font-style:normal;color:#7a4818}
-.call{font-size:12px;border-radius:999px;padding:3px 10px;background:var(--fog);white-space:nowrap}.call.hit,.call.fine{background:var(--mint);color:#245f46}.call.miss{background:var(--amber);color:#7a4818}.call+.call{grid-column:3}
-.rulesT{width:100%;border-collapse:collapse;text-align:left;font-size:14px}
-.rulesT th,.rulesT td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle}.rulesT thead th{font-size:12px;color:var(--muted);font-weight:600}.rulesT tbody th{font-weight:500}
-.rulesT tr.cur>*{background:var(--selected);color:var(--indigo);font-weight:600}
-.more{margin:10px 8px 0;font-size:13px;color:var(--muted)}
+/* ---- Workspace ---- */
+.flow{padding-top:40px;padding-bottom:64px;grid-template-rows:auto 1fr}
+.flowA{grid-row:1;display:grid;gap:24px}
+.flowObj{grid-row:1/span 2;position:sticky;top:24px}
+.flowC{grid-row:2;display:grid;gap:12px;align-content:start}
+#story:empty{display:none}
+.after:empty{display:none}
+.after{display:flex;flex-wrap:wrap;gap:12px}
+.chips[hidden],.composer[hidden],.send[hidden]{display:none}
+.tiles.two{grid-template-columns:1fr 1fr}
+.tiles.list{grid-template-columns:1fr}
+.tiles.list .tile{flex-direction:row;align-items:center;justify-content:flex-start;gap:12px;min-height:56px}
+.tile .ic{flex:none}
 
-/* Workspace: the story and the learner's call on the left, Grace's screen on the right */
-.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;height:60px;padding:0 clamp(16px,3vw,40px);border-bottom:1px solid var(--line)}
-.prog{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}.prog b{font-weight:600;margin-right:6px}
-.prog i{display:block;width:22px;height:4px;border-radius:2px;background:var(--line)}.prog i.on{background:var(--indigo)}
-.flow{display:grid;grid-template-columns:minmax(320px,470px) minmax(0,1fr);grid-template-areas:"trail screen" "talk screen" "reply screen" ". screen";grid-template-rows:auto auto auto 1fr;column-gap:clamp(24px,4vw,64px);max-width:1240px;min-height:calc(100svh - 61px);margin:0 auto;padding:clamp(20px,3vw,40px) clamp(16px,4vw,56px) 40px}
-#trail{grid-area:trail}#talk{grid-area:talk}#reply{grid-area:reply}
-#screen{grid-area:screen;align-self:start;position:sticky;top:24px;display:grid;align-content:center;min-height:min(560px,calc(100svh - 130px));padding:clamp(16px,2.6vw,36px);background:var(--fog);border-radius:18px}
-#trail ol{list-style:none;margin:0 0 20px;padding:0 0 16px;display:grid;gap:6px;border-bottom:1px solid var(--line)}
-#trail li{font-size:13px;color:var(--muted)}#trail li::before{content:'✓';color:var(--indigo);font-weight:700;margin-right:8px}#trail b{color:var(--ink);font-weight:600;margin-left:4px}
-.story{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:flex-end;aspect-ratio:16/8;margin:0 0 20px;border-radius:14px;color:#fff;background:#24372b url('assets/zuri-shop.jpg') 88% 18%/175% auto no-repeat}
-.story::before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(0deg,#0d1514e6 0%,#0d151480 42%,#0d151400 70%)}
-.story blockquote{margin:0;padding:14px 16px;font-size:16px;line-height:1.4}
-.story cite{display:block;font-style:normal;font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.85;margin-bottom:4px}
-.msg{display:grid;grid-template-columns:36px minmax(0,1fr);gap:12px;margin-bottom:16px}
-.av{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--selected)}.av svg{width:15px;height:16px}
-.av.grace{background:#24372b url('assets/zuri-shop.jpg') 80.5% 20%/720% auto no-repeat}
-.msg b{display:block;font-size:13px;margin-bottom:2px}.msg p{margin:0;font-size:17px;line-height:1.45}.msg small{display:block;margin-bottom:2px}.msg strong{font-weight:700}
-.note,.runSteps,.aside,#reply,.endCard{margin-left:48px}
-.note{margin-top:0;margin-bottom:14px;padding:10px 14px;border-radius:10px;font-size:15px;background:#f1f2fa;border-left:3px solid #a1a8d9}.note:focus{outline:none}
-.note.ok{background:var(--mint);border-color:#58b786}.note.warn{background:var(--amber);border-color:#e0a23c}
-.aside{font-size:14px;color:var(--muted);margin-top:0}
-.runSteps{list-style:none;padding:0;margin-top:0;margin-bottom:14px;display:grid;gap:7px;font-size:14px;color:var(--muted)}
-.runSteps li{display:flex;align-items:center;gap:9px}.runSteps li::before{content:'';flex:none;width:12px;height:12px;border-radius:50%;border:2px solid var(--indigo)}
-.runSteps li.now::before{border-top-color:transparent;animation:spin .7s linear infinite}.runSteps li.done{color:var(--ink)}.runSteps li.done::before{background:var(--indigo)}
-.endCard{padding:14px 16px;border:1px solid var(--line);border-radius:12px;margin-bottom:16px}.endCard p{margin:4px 0 0;color:var(--muted);font-size:14px}
-#reply{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start}
-.two{display:flex;flex-wrap:wrap;gap:10px}.two button{min-width:140px}
-.opts{display:grid;gap:8px;width:100%}.opts button{justify-content:flex-start;text-align:left;font-weight:500}
-.slots{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
-.slot{flex-direction:column;align-items:flex-start;gap:0;min-height:62px;padding:9px 14px;border-style:dashed;border-color:#aeb4c1}
-.slot.filled{border-style:solid}.slot.on,.slot.on:hover:not(:disabled){border:1px solid var(--indigo);background:var(--selected)}.slot b{font-size:16px}.slot:not(.filled) b{color:var(--muted);font-weight:500}
-.chips{display:flex;flex-wrap:wrap;gap:8px;width:100%}
-.chip{border-radius:999px;padding:6px 14px;font-weight:500;font-size:14px}.chip.used{background:var(--selected);border-color:#b9c0ee;color:var(--indigo)}
+/* Rows that carry a second line (rule sheet, comparison) */
+.row .eg{display:block;color:var(--ink-2);font:500 13px/20px Manrope,sans-serif}
+.row b{font-weight:600}
+.row.open{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;background:#fff}
+.row.open p{grid-column:1/-1;font:400 14px/20px Manrope,sans-serif;color:var(--ink-2)}
+.row.open .is b{color:var(--ink)}
+.row.open .why{color:var(--ink)}
+.sheetNote{margin:16px 4px 0}
 
-@media(max-width:860px){
- .flow{display:block;min-height:0;padding-top:18px}
- #screen{position:static;min-height:0;margin:4px 0 18px;padding:10px}
- .note,.runSteps,.aside,#reply,.endCard{margin-left:0}
- .prog b{display:none}
+/* ---- Dialog: glass sheet ---- */
+.sheetDialog{width:min(520px,calc(100vw - 32px));max-height:calc(100svh - 64px);padding:24px;border:0;border-radius:var(--r-panel);color:#fff;background:rgb(70 52 112/.92);backdrop-filter:blur(28px) saturate(140%);-webkit-backdrop-filter:blur(28px) saturate(140%);box-shadow:var(--glass-edge),0 40px 80px -30px rgb(20 10 40/.7)}
+.sheetDialog::backdrop{background:rgb(20 12 40/.5)}
+.sheetHead{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}
+.sheetDialog .t-body{margin-bottom:24px}
+.toggle{display:flex;align-items:center;gap:12px;min-height:48px;font:500 15px/20px Manrope,sans-serif}
+.toggle input{width:20px;height:20px;margin:0;accent-color:var(--accent)}
+.sheetDialog .btn-glass{margin-top:16px}
+
+@media(max-width:1023px){
+ .sceneBody{padding-top:160px}
+ .flowA,.flowObj,.flowC{grid-row:auto}
+ .flowObj{position:static}
+ .flow{grid-template-rows:none}
 }
-@media(max-width:740px){
- .scene::before{background:linear-gradient(0deg,#0d1514f5 0%,#0d1514cc 46%,#0d151400 78%)}
- .scene{background-position:85% center}.sceneBg{object-position:85% center}
- .sceneBody{margin:auto 0 0;padding-bottom:0}.cap{font-size:17px}
- .winBody{padding:14px 14px 16px}.winTitle{display:none}
+@media(max-width:767px){
+ .scene,.sceneBg{background-position:85% center;object-position:85% center}
+ .scene::before{background:linear-gradient(0deg,#0d1514f5 0%,#0d1514cc 52%,#0d151400 80%)}
+ .sceneBody{padding-top:240px;padding-bottom:40px}
+ .flow{padding-top:24px}
 }

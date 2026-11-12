@@ -118,7 +118,7 @@ button:disabled{cursor:default}
 .pill .orb{width:24px;height:24px}
 .pill .compose{flex:1;min-width:0;display:flex;align-items:center;gap:8px;height:44px;overflow:hidden}
 .pill .placeholder{color:var(--on-input-2)}
-.pill .wave{flex:1;height:20px;display:none}
+.pill .wave{flex:1;width:0;min-width:0;height:20px;display:none}
 .composer.working .compose{display:none}.composer.working .wave{display:block}
 .token{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:var(--r-pill);background:rgb(29 26 36/.07);color:var(--on-input);font:500 15px/20px Manrope,sans-serif;white-space:nowrap}
 .token small{font:500 12px/16px Manrope,sans-serif;color:var(--on-input-2)}
