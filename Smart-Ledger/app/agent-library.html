@@ -1,0 +1,126 @@
+<!doctype html><html lang="en-KE"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Smart Ledger · Agent library</title>
+<link rel="stylesheet" href="agent-library.css">
+<style>
+/* Specimen layout only. Not part of the library. */
+.page{max-width:1180px;margin:0 auto;padding:8px clamp(16px,4vw,40px) 96px}
+.sec{padding:56px 0 8px}
+.secHead{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:20px}
+.src{font:500 12px/1 Manrope,sans-serif;padding:6px 10px;border-radius:999px;background:var(--glass-1);color:#fff;white-space:nowrap}
+.step{display:grid;grid-template-columns:minmax(0,480px) minmax(0,1fr);gap:clamp(24px,4vw,56px);align-items:start;margin-top:24px}
+.stack{display:grid;gap:20px}
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.sw{border-radius:var(--r-tile);overflow:hidden;background:var(--glass-1)}
+.sw i{display:block;height:72px}
+.sw div{padding:10px 12px}.sw b{display:block;font:600 13px/1.3 Manrope,sans-serif}.sw small{font:500 12px/1.3 Manrope,sans-serif;color:var(--on-glass-2)}
+.typeRow{display:grid;grid-template-columns:150px 1fr;gap:16px;align-items:baseline;padding:14px 0;border-bottom:1px solid rgb(255 255 255/.18)}
+.demoRow{display:flex;flex-wrap:wrap;align-items:center;gap:16px}
+.twoUp{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.rules{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin:0;padding:0;list-style:none}
+.rules li{padding:16px;border-radius:var(--r-tile);background:var(--glass-1);font:500 15px/1.45 Manrope,sans-serif}
+.rules b{display:block;margin-bottom:2px}
+.objOk{margin-top:14px}
+@media(max-width:860px){.step,.twoUp{grid-template-columns:1fr}.typeRow{grid-template-columns:1fr;gap:4px}}
+</style></head>
+<body class="atm">
+<header class="hdr"><p class="t-title">Zuri Home Supplies</p><p class="t-caption dim">June month-end</p><button class="icon-glass" type="button" aria-label="Audio settings" id="gear"></button></header>
+<main class="page">
+
+<section class="sec" aria-labelledby="s0"><div class="secHead"><h1 class="t-display" id="s0">Agent library</h1><span class="src">R1 · R2 · R3 · FP</span></div>
+<p class="t-message dim" style="max-width:640px">A posting-rule step built only from the parts below. Pick a debit and a credit, then send. Cash and Capital is correct.</p>
+<div class="step">
+ <div class="stack">
+  <div class="story"><p>“Some of these look wrong to me, but I cannot tell why. What should the system be doing?”</p><button class="icon-glass" type="button" aria-label="Play Grace's line" id="replay"></button></div>
+  <div class="line enter"><span class="av" data-orb id="agentAv"></span><p class="t-message">When the owner invests cash, which account do I debit, and which do I credit?</p></div>
+  <div>
+   <div class="chips" id="chips"></div>
+   <div class="composer" id="composer">
+    <div class="pill"><span data-orb id="pillOrb"></span><div class="compose" id="compose"></div><canvas class="wave" data-wave="gradient" id="pillWave"></canvas><button class="send" id="send" type="button" aria-label="Send" disabled><span><svg class="ic arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg><i class="stop"></i></span></button></div>
+    <div class="tiles" id="tiles" role="group" aria-label="Accounts"></div>
+   </div>
+  </div>
+ </div>
+ <div class="obj" id="obj"></div>
+</div>
+</section>
+
+<section class="sec" aria-labelledby="s1"><div class="secHead"><h2 class="t-title" id="s1">Colour</h2><span class="src">Sampled from R1 · R2 · R3</span></div><div class="swatches" id="swatches"></div></section>
+
+<section class="sec" aria-labelledby="s2"><div class="secHead"><h2 class="t-title" id="s2">Type · Manrope</h2><span class="src">R1 · R3</span></div>
+ <div class="typeRow"><span class="t-caption dim">Display 44 / 600</span><p class="t-display">Month-end at Zuri.</p></div>
+ <div class="typeRow"><span class="t-caption dim">Title 20 / 600</span><p class="t-title">Zuri Home Supplies</p></div>
+ <div class="typeRow"><span class="t-caption dim">Message 19 / 400</span><p class="t-message">Which account do I debit, and which do I credit?</p></div>
+ <div class="typeRow"><span class="t-caption dim">Label 15 / 500</span><span class="t-label">Rule sheet</span></div>
+ <div class="typeRow"><span class="t-caption dim">Caption 13 / 500</span><span class="t-caption">June month-end</span></div>
+ <div class="typeRow"><span class="t-caption dim">Numbers · tabular</span><span class="num" style="font-size:34px">KSh 50,000</span></div>
+</section>
+
+<section class="sec" aria-labelledby="s3"><div class="secHead"><h2 class="t-title" id="s3">Agent orb</h2><span class="src">R3 globe · R1 orb dot</span></div>
+ <div class="twoUp">
+  <div class="demoRow"><span data-orb id="bigOrb" style="width:160px;height:160px"></span><span data-orb style="width:56px;height:56px"></span><span data-orb style="width:36px;height:36px"></span><span data-orb style="width:22px;height:22px"></span></div>
+  <div class="demoRow" id="orbStates"></div>
+ </div>
+</section>
+
+<section class="sec" aria-labelledby="s4"><div class="secHead"><h2 class="t-title" id="s4">Waveform · glow · result</h2><span class="src">Brief · FP glow</span></div>
+ <div class="twoUp">
+  <div class="stack"><canvas class="wave" data-wave id="stageWave" style="height:32px"></canvas><div class="demoRow"><button class="btn-glass" type="button" id="waveToggle">Start working</button><button class="send" type="button" id="glowDemo" aria-label="Glow demo"><span><svg class="ic arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg><i class="stop"></i></span></button><span class="t-caption dim">The arc orbits once per 1.2 s while working</span></div></div>
+  <div class="demoRow"><button class="btn-glass" type="button" data-result="pass">Show a pass</button><button class="btn-glass" type="button" data-result="fail">Show a fail</button></div>
+ </div>
+</section>
+
+<section class="sec" aria-labelledby="s5"><div class="secHead"><h2 class="t-title" id="s5">Transcript · buttons</h2><span class="src">R3 · R2</span></div>
+ <div class="twoUp">
+  <div class="stack">
+   <div class="line"><span class="av grace" aria-hidden="true"></span><p class="t-message">The books balance now. How do I know the system will not make the same mistakes next month?</p></div>
+   <div class="line"><span class="av" data-orb></span><p class="t-message">Pick the cases you want me to run.</p></div>
+   <div class="line"><span class="av me" aria-hidden="true">A</span><p class="t-message">Debit Cash · Credit Capital</p></div>
+  </div>
+  <div class="demoRow"><button class="btn-ink" type="button">Open the ledger</button><button class="btn-glass" type="button">Skip</button><button class="btn-raised" type="button">Rule sheet</button><span class="icon-glass" id="iconDemo"></span></div>
+ </div>
+</section>
+
+<section class="sec" aria-labelledby="s6"><div class="secHead"><h2 class="t-title" id="s6">Rules</h2><span class="src">README §3</span></div><ol class="rules" id="rules"></ol></section>
+</main>
+<script src="content.js"></script><script src="agent-library.js"></script>
+<script>
+// Specimen wiring. In the simulation the same parts are driven by agent.js.
+const $=id=>document.getElementById(id);
+$('gear').innerHTML=AL.icon('settings');$('replay').innerHTML=AL.icon('play');$('iconDemo').innerHTML=AL.icon('globe');
+$('chips').innerHTML=['sheet:Rule sheet','note:Grace\'s notes'].map(x=>{const[i,l]=x.split(':');return '<button class="chip" type="button">'+AL.icon(i)+l+'</button>'}).join('');
+const pick=[null,null];let side=0,busy=false,saved=false;
+function compose(){
+ $('compose').innerHTML=pick.every(v=>v===null)&&side===0?'<span class="placeholder">Pick the debit account</span>':['Debit','Credit'].map((s,k)=>'<button type="button" class="token'+(side===k?' on':'')+(pick[k]===null?' empty':'')+'" data-side="'+k+'"><small>'+s+'</small><b>'+(pick[k]===null?'—':accounts[pick[k]])+'</b></button>').join('');
+ $('tiles').innerHTML=accounts.map((a,j)=>'<button type="button" class="tile'+(pick.includes(j)?' on':'')+'" data-acct="'+j+'" '+(busy||saved?'disabled':'')+'>'+AL.icon(AL.accountIcons[j])+'<span>'+a+'</span>'+(pick.includes(j)?'<i class="dot" aria-hidden="true"></i>':'')+'</button>').join('');
+ $('send').disabled=busy||saved||pick.includes(null);
+}
+function object(){
+ const row=(l,d,c,now)=>'<li class="row'+(now?' now':'')+'"><span>'+l+'</span><small>'+d+' · '+c+'</small></li>';
+ $('obj').innerHTML='<div class="objBar"><span class="appTile">'+AL.icon('ledger')+'</span><div><b>Posting rules</b><small>Smart Ledger</small></div>'+AL.icon('globe','end')+'</div><div class="objBody"><ul class="rows">'+
+  row('Owner invests cash',saved?'Cash':pick[0]===null?'Debit ?':accounts[pick[0]],saved?'Capital':pick[1]===null?'Credit ?':accounts[pick[1]],!saved)+
+  '</ul>'+(saved?'<div class="objOk enter"><p class="objLabel">Test posting · KSh 50,000</p><div class="t"><div><small>Debit</small><b>Cash</b><span>50,000</span></div><div><small>Credit</small><b>Capital</b><span>50,000</span></div></div></div>':'')+'</div>';
+}
+document.addEventListener('click',e=>{
+ const t=e.target.closest('[data-acct]'),s=e.target.closest('[data-side]');
+ if(s){side=+s.dataset.side;compose();return}
+ if(t){pick[side]=+t.dataset.acct;if(side===0&&pick[1]===null)side=1;compose();object();return}
+});
+$('send').onclick=async()=>{
+ busy=true;compose();const ok=pick[0]===0&&pick[1]===6;const fast=matchMedia('(prefers-reduced-motion: reduce)').matches;
+ $('composer').classList.add('working');$('send').classList.add('running');$('pillWave').wave.fit();$('pillWave').wave.set(true);$('agentAv').orb.set('building');$('pillOrb').orb.set('working');
+ await new Promise(r=>setTimeout(r,fast?0:1600));
+ $('composer').classList.remove('working');$('send').classList.remove('running');$('pillWave').wave.set(false);busy=false;
+ $('agentAv').orb.set(ok?'pass':'fail');$('pillOrb').orb.set(ok?'pass':'fail');
+ if(ok){saved=true}compose();object();
+ AL.result(ok?'Saved. Cash comes into the shop. The owner’s capital increases.':pick[0]===6&&pick[1]===0?'Sides swapped. Check which balance increases and which falls.':'Check the debit account (asset).',ok?'pass':'fail');
+};
+// Swatches
+const sw=[['--atm-blue','#4a95d6','R3 top'],['--atm-sky','#a3b0da','R3 middle'],['--atm-violet','#a475b7','R1'],['--atm-orchid','#c387bd','R1'],['--atm-rose','#d0869e','R1'],['--atm-plum','#7057a3','R1'],['--glass-1','white 22%','R3 mic'],['--glass-3','white 40%','R1 chip'],['--glass-input','white 80%','R1 pill'],['--obj-canvas','#dbdce0','R2'],['--obj-fill','#c8cbd2','R2'],['--obj-raised','#ececec','R2'],['--ink','#0b0b0d','R2 tile'],['--accent','#f28e38','R2 plus'],['--pass','#46c98a','Brief'],['--fail','#ef6170','Brief']];
+$('swatches').innerHTML=sw.map(([v,h,s])=>'<div class="sw"><i style="background:var('+v+')"></i><div><b>'+v+'</b><small>'+h+' · '+s+'</small></div></div>').join('');
+$('orbStates').innerHTML=['idle','working','building','pass','fail'].map(s=>'<button class="btn-glass" type="button" data-state="'+s+'">'+s[0].toUpperCase()+s.slice(1)+'</button>').join('');
+$('orbStates').onclick=e=>{const b=e.target.closest('[data-state]');if(b)$('bigOrb').orb.set(b.dataset.state)};
+$('waveToggle').onclick=()=>{const w=$('stageWave').wave,on=!w.active;w.set(on);$('glowDemo').classList.toggle('running',on);$('waveToggle').textContent=on?'Stop':'Start working'};
+document.querySelectorAll('[data-result]').forEach(b=>b.onclick=()=>AL.result(b.dataset.result==='pass'?'Saved. Cash comes into the shop. The owner’s capital increases.':'Sides swapped. Check which balance increases and which falls.',b.dataset.result));
+$('rules').innerHTML=[['One thing at a time','One question, one object, one composer.'],['No progress furniture','No step dots, counters or tallies.'],['One feedback channel','Orb pulse and the centre pop-up.'],['Nothing moves the layout','Work animates inside fixed boxes.'],['Filled, not outlined','Selection is a fill, never a stroke.'],['One accent per screen','Orange marks "this one".'],['Two sentences at most','Longer content belongs on the object.'],['Picks, not typing','For anything that is marked.'],['Glass talks, objects count','Ledger data sits on solid objects.'],['Reduced motion keeps every state','Shown by colour, not movement.']].map(([b,t])=>'<li><b>'+b+'</b>'+t+'</li>').join('');
+compose();object();AL.mount();
+</script>
+</body></html>
